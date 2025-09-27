@@ -201,6 +201,27 @@ window.addEventListener('keydown', function(event) {
         }
     }
 
+if (key === '¨') {
+        event.preventDefault();
+        if (isChatting) {
+            const messageText = chatInput.value.trim();
+            if (messageText) {
+                socket.emit('sendMessage', red, messageText);
+            }
+            chatInput.value = '';
+            chatInput.blur();
+        } else {
+            chatInput.style.display = 'block';
+            chatInput.focus();
+        }
+    }
+
+    if(key === 'delete'){
+        const X = Math.random() * 200;
+        const Y = Math.random() * 200;
+        if(Y < 100 , X > 100); return showNotification("Teleport sucessful!", "green");
+    }
+    
     if (key === 'escape') {
         if (isChatting) {
             chatInput.value = '';
