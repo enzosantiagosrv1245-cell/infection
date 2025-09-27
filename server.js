@@ -101,7 +101,7 @@ const SPY_COOLDOWN = 30000;
 const BUTTERFLY_DURATION = 5000;
 const BUTTERFLY_SPEED = 4;
 const INVISIBILITY_CLOAK_BREAK_DISTANCE = 250;
-const SKATEBOARD_SPEED_BOOST = 5;
+const SKATEBOARD_SPEED_BOOST = 7;
 const SKATEBOARD_WIDTH = 90;
 const SKATEBOARD_HEIGHT = 35;
 const DRONE_FOLLOW_FACTOR = 0.05;
@@ -136,15 +136,14 @@ const LARGE_BALL_PLAYER_KNOCKBACK = 0.5;
 const RHINOCEROS_FORCE = 1.5;
 const RHINOCEROS_RADIUS = 150;
 const RHINOCEROS_COOLDOWN = 2000;
-const RUNNING_TENNIS_SPEED_BOOST = 5;
+const RUNNING_TENNIS_SPEED_BOOST = 3;
 const SINKING_DURATION = 3000;
 
 const FUNCTION_COSTS = {
-    athlete: 500,
-    engineer: 500,
-    spy: 500,
-    butterfly: 1000,
-    rhinoceros: 1000,
+    athlete: 700,
+    engineer: 650,
+    spy: 1000,
+    butterfly: 1500,
 };
 const ZOMBIE_ABILITY_COSTS = {
     trap: 50,
@@ -178,8 +177,8 @@ function getDensityById(id) {
 function createPlayerBody(player) {
     const infectionRadius = player.width * 0.75;
     const physicsRadius = player.role === 'human' ?
-        infectionRadius / 3 :
-        infectionRadius / 2;
+        infectionRadius / 4 :
+        infectionRadius / 3;
 
     const body = Matter.Bodies.circle(player.x, player.y, physicsRadius, {
         inertia: Infinity,
