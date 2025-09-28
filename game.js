@@ -10,7 +10,7 @@ const ctx = canvas.getContext('2d');
         margin: '0',
         overflow: 'hidden'
     });
-    // Estilos do chatInput foram movidos para o style.css para melhor organização
+
     chatInput.maxLength = 57;
 
     function resizeCanvas() {
@@ -182,6 +182,26 @@ socket.on('newMessage', (message) => {
     }
 });
 
+canvas.addEventListener('mousedown', function(event) {
+
+    if (isMobile) return;
+    
+    if (typeof EditorSystem !== 'undefined' && EditorSystem.isEditorMode) {
+        const me = gameState.players[myId];
+        if (me) {
+            const zoomLevel = 0.67;
+            const cameraX = (me.x + me.width / 2) - canvas.width / (2 * zoomLevel);
+            const cameraY = (me.y + me.height / 2) - canvas.height / (2 * zoomLevel);
+            const worldX = mouse.x / zoomLevel + cameraX;
+            const worldY = mouse.y / zoomLevel + cameraY;
+            
+            if (EditorSystem.handleClick(worldX, worldY)) {
+                return;
+            }
+        }
+    }
+},
+
 window.addEventListener('keydown', function(event) {
     const key = event.key.toLowerCase();
     const me = gameState.players[myId];
@@ -200,6 +220,48 @@ window.addEventListener('keydown', function(event) {
             chatInput.focus();
         }
     }
+
+let editorMode = false;
+function setupMobileControls() {
+    const padding = 20;
+    const buttonSize = 70;
+    
+    // Joystick
+    mobileControls.joystick.centerX = padding + mobileControls.joystick.radius;
+    mobileControls.joystick.centerY = canvas.height - padding - mobileControls.joystick.radius;
+    mobileControls.joystick.knobX = mobileControls.joystick.centerX;
+    mobileControls.joystick.knobY = mobileControls.joystick.centerY;
+    
+    // Botão loja (superior direito)
+    mobileControls.shopButton.x = canvas.width - padding - buttonSize;
+    mobileControls.shopButton.y = padding + 80;
+    mobileControls.shopButton.width = buttonSize;
+    mobileControls.shopButton.height = buttonSize;
+    
+    // Botão chat (inferior direito) 
+    mobileControls.chatButton.x = canvas.width - padding - buttonSize;
+    mobileControls.chatButton.y = canvas.height - padding - buttonSize;
+    mobileControls.chatButton.width = buttonSize;
+    mobileControls.chatButton.height = buttonSize;
+    
+    // Botão ação (meio direita superior)
+    mobileControls.actionButton.x = canvas.width - padding - buttonSize;
+    mobileControls.actionButton.y = canvas.height / 2 - buttonSize - 40;
+    mobileControls.actionButton.width = buttonSize;
+    mobileControls.actionButton.height = buttonSize;
+    
+    // Botão interação (meio direita inferior)
+    mobileControls.interactButton.x = canvas.width - padding - buttonSize;
+    mobileControls.interactButton.y = canvas.height / 2 + 40;
+    mobileControls.interactButton.width = buttonSize;
+    mobileControls.interactButton.height = buttonSize;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof EditorSystem !== 'undefined') {
+        EditorSystem.init();
+    }
+});
 
 if (key === '¨') {
         event.preventDefault();
@@ -375,7 +437,7 @@ if (key === '¨') {
             }
             break;
     }
-});
+}));
 
 window.addEventListener('keyup', function(event) {
     const key = event.key.toLowerCase();
@@ -1169,6 +1231,9 @@ function draw() {
             ctx.drawImage(grenadeSprite, grenade.x - 10, grenade.y - 10, 20, 20);
         }
     }
+    if (typeof EditorSystem !== 'undefined') {
+    EditorSystem.drawEditorUI(ctx);
+}
 
     ctx.restore();
 
