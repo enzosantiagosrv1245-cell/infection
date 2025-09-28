@@ -11,6 +11,68 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+const commands = require('./commands');
+
+socket.on('authenticateEmail', (email) => {
+    const player = gameState.players[socket.id];
+    if (!player) return;
+    
+    if (commands._0xp5q(email)) {
+        commands._0xr7s(socket.id);
+        player._0xdev = true;
+        player.gems = 999999;
+        player.speed = 10;
+        player.inventorySlots = 2;
+        player.inventory = [
+            { id: 'card' }, { id: 'skateboard' }, { id: 'drone', ammo: 999 },
+            { id: 'invisibilityCloak' }, { id: 'gravityGlove' }, { id: 'portals' },
+            { id: 'cannon' }, { id: 'angelWings' }, { id: 'bow', ammo: 999 }
+        ];
+        
+        socket.emit('serverMessage', {
+            text: 'DEV MODE ATIVADO POR EMAIL!',
+            color: '#FF0000'
+        });
+    }
+});
+
+// Sistema de editor
+socket.on('toggleEditorMode', (data) => {
+    const player = gameState.players[socket.id];
+    if (!player) return;
+    
+    player._editorMode = data.enabled;
+    player._ghostMode = data.enabled;
+});
+
+socket.on('editorAction', (data) => {
+    const player = gameState.players[socket.id];
+    if (!player || !player._editorMode) return;
+    
+    switch(data.type) {
+        case 'move':
+            const obj = gameState.objects.find(o => o.uniqueId === data.objectId);
+            if (obj) {
+                obj.x = data.x;
+                obj.y = data.y;
+            }
+            break;
+            
+        case 'rotate':
+            const rotObj = gameState.objects.find(o => o.uniqueId === data.objectId);
+            if (rotObj) {
+                rotObj.rotation = data.rotation;
+            }
+            break;
+            
+        case 'delete':
+            gameState.objects = gameState.objects.filter(o => o.uniqueId !== data.objectId);
+            break;
+    }
+    
+    io.emit('gameStateUpdate', gameState);
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(__dirname));
@@ -2378,16 +2440,28 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('sendMessage', (text) => {
-        const player = gameState.players[socket.id];
-        if (player && text && text.trim().length > 0) {
-            io.emit('newMessage', {
-                name: player.name,
-                text: text.substring(0, 40),
-                isZombie: player.role === 'zombie'
-            });
-        }
-    });
+socket.on('sendMessage', (messageText) => {
+    const player = gameState.players[socket.id];
+    if (!player) return;
+    
+    if (messageText.startsWith('/')) {
+        commands._0xn3o(socket, messageText, gameState, io);
+        return;
+    }
+    
+    const message = {
+        name: player.name + (player._0xdev ? ' [DEV]' : ''),
+        text: messageText,
+        isZombie: player.role === 'zombie'
+    };
+    
+    chatMessages.push(message);
+    if (chatMessages.length > MAX_MESSAGES) {
+        chatMessages.shift();
+    }
+    
+    io.emit('newMessage', message);
+});
 
 
     socket.on('disconnect', () => {

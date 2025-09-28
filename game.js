@@ -1090,6 +1090,13 @@ function draw() {
 
                 ctx.strokeStyle = 'black';
                 ctx.lineWidth = 5;
+                drawInventory(player, nameX, nameY + 10);
+                
+                if (isMobile) {
+    
+                    drawMobileControls();
+
+                }
 
                 // Draw DEV tag in red
                 ctx.fillStyle = 'red';
