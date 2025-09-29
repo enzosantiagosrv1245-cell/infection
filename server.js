@@ -50,6 +50,13 @@ io.on('connection', (socket) => {
     socket.emit('gameStateUpdate', gameState);
     socket.emit('chatMessage', chatMessages);
 
+    socket.on('sendMessage', (data) => {
+        chatMessages.push(data);
+    socket.on('sendMessage', (data) => {
+        io.emit('chatMessage', chatMessages);
+    });
+});
+
     // Ações do editor
     socket.on('editorAction', (data) => {
         switch (data.type) {
@@ -99,13 +106,6 @@ io.on('connection', (socket) => {
 
         io.emit('gameStateUpdate', gameState);
     });
-
-    socket.on('sendMessage', (data) => {
-        chatMessages.push(data);
-    socket.on('sendMessage', (data) => {
-        io.emit('chatMessage', chatMessages);
-    });
-});
  
 app.use(express.static(__dirname));
 app.use(express.json());
