@@ -22,7 +22,7 @@ socket.on('sendMessage', (data) => {
   chatMessages.push(data);
 
   // Emite para todos os clientes a nova lista de mensagens
-  io.emit('chatMessage', chatMessage);
+  io.emit('chatMessage', chatMessages);
 });
 
 socket.on('authenticateEmail', (email) => {
