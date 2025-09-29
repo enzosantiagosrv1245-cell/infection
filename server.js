@@ -13,6 +13,8 @@ const io = new Server(server);
 
 const commands = require('./commands');
 
+io.on('connection', (socket) => {
+
 socket.on('authenticateEmail', (email) => {
     const player = gameState.players[socket.id];
     if (!player) return;
@@ -36,6 +38,7 @@ socket.on('authenticateEmail', (email) => {
     }
 });
 
+});
 // Sistema de editor
 socket.on('toggleEditorMode', (data) => {
     const player = gameState.players[socket.id];
