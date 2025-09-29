@@ -15,15 +15,6 @@ let chatMessages = [];
 
 const MAX_MESSAGE = 1000;
 
-// ✅ Declaração única do gameState
-let gameState = {
-    players: {},
-    objects: [],
-    timeLeft: 120,
-    startTime: 60,
-    gamePhase: 'waiting'
-};
-
 io.on('connection', (socket) => {
     console.log("Novo cliente conectado:", socket.id);
 
@@ -116,6 +107,7 @@ const MESSAGES_FILE = path.join(__dirname, "messages.json");
 const LINKS_FILE = path.join(__dirname, "links.json");
 
 let users = {};
+let gameState = {};
 let sockets = {};
 let messages = {};
 let links = [];
