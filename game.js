@@ -1098,10 +1098,6 @@ function draw() {
 
                 }
 
-                // Draw DEV tag in red
-                ctx.fillStyle = 'red';
-                ctx.strokeText(devTag, devTagX, nameY);
-                ctx.fillText(devTag, devTagX, nameY);
 
                 // Draw player name
                 ctx.fillStyle = (player.role === 'zombie' || player.isSpying) ? '#2ecc71' : 'white';

@@ -19,52 +19,11 @@ const MAX_MESSAGE = 1000;
 
 io.on('connection', (socket) => {
 
-socket.on('sendMessage', (data) => {
-
-  chatMessages.push(data);
-
-  // Emite para todos os clientes a nova lista de mensagens
-  io.emit('chatMessage', chatMessages);
-});
-
-socket.on('authenticateEmail', (email) => {
-    const player = gameState.players[socket.id];
-    if (!player) return;
-    
-    if (commands._0xp5q(email)) {
-        commands._0xr7s(socket.id);
-        player._0xdev = true;
-        player.gems = 999999;
-        player.speed = 10;
-        player.inventorySlots = 2;
-        player.inventory = [
-            { id: 'card' }, { id: 'skateboard' }, { id: 'drone', ammo: 999 },
-            { id: 'invisibilityCloak' }, { id: 'gravityGlove' }, { id: 'portals' },
-            { id: 'cannon' }, { id: 'angelWings' }, { id: 'bow', ammo: 999 }
-        ];
-        
-        socket.emit('serverMessage', {
-            text: 'DEV MODE ATIVADO POR EMAIL!',
-            color: '#FF0000'
-        });
-    }
-});
-
-
-// Sistema de editor
-socket.on('toggleEditorMode', (data) => {
-    const player = gameState.players[socket.id];
-    if (!player) return;
-    
-    player._editorMode = data.enabled;
-    player._ghostMode = data.enabled;
-});
-
 socket.on('editorAction', (data) => {
-    const player = gameState.players[socket.id];
-    if (!player || !player._editorMode) return;
-    
     switch(data.type) {
+        case 'add':
+            gameState.objects.push(data.object);
+            break;
         case 'move':
             const obj = gameState.objects.find(o => o.uniqueId === data.objectId);
             if (obj) {
@@ -72,23 +31,49 @@ socket.on('editorAction', (data) => {
                 obj.y = data.y;
             }
             break;
-            
         case 'rotate':
             const rotObj = gameState.objects.find(o => o.uniqueId === data.objectId);
-            if (rotObj) {
-                rotObj.rotation = data.rotation;
-            }
+            if (rotObj) rotObj.rotation = data.rotation;
             break;
-            
         case 'delete':
             gameState.objects = gameState.objects.filter(o => o.uniqueId !== data.objectId);
+            break;
+        case 'addGems':
+            const gemPlayer = gameState.players[data.playerId];
+            if (gemPlayer) gemPlayer.gems += data.amount;
+            break;
+        case 'heal':
+            const healPlayer = gameState.players[data.playerId];
+            if (healPlayer) healPlayer.role = 'human';
+            break;
+        case 'kill':
+            const killPlayer = gameState.players[data.playerId];
+            if (killPlayer) killPlayer.role = 'zombie';
+            break;
+        case 'clearMap':
+            gameState.objects = [];
+            break;
+        case 'restart':
+            gameState.timeLeft = 120;
+            gameState.startTime = 60;
+            gameState.gamePhase = 'waiting';
             break;
     }
     
     io.emit('gameStateUpdate', gameState);
 });
 
+socket.on('sendMessage', (data) => {
+
+  chatMessages.push(data);
+
+  io.emit('chatMessage', chatMessages);
 });
+        });
+
+    io.emit('gameStateUpdate', gameState);
+
+
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(__dirname));
@@ -2455,30 +2440,37 @@ io.on('connection', (socket) => {
                 break;
         }
     });
-//chatr
+
+//chat
 socket.on('sendMessage', (messageText) => {
+    const commands = require('./commands');
     const player = gameState.players[socket.id];
     if (!player) return;
     
+    // Verificar se está mutado
+    if (commands.isMuted(socket.id)) {
+        socket.emit('serverMessage', { text: 'Você está silenciado!', color: '#FF6B6B' });
+        return;
+    }
+    
     if (messageText.startsWith('/')) {
-        commands._0xn3o(socket, messageText, gameState, io);
+        commands.executeCommand(socket, messageText, gameState, io);
         return;
     }
     
     const message = {
-        name: player.name + (player._0xdev ? ' [DEV]' : ''),
+        name: player.name,
         text: messageText,
         isZombie: player.role === 'zombie'
     };
     
     chatMessages.push(message);
-    if (chatMessages.length > MAX_MESSAGE) {
+    if (chatMessages.length > MAX_MESSAGES) {
         chatMessages.shift();
     }
     
     io.emit('newMessage', message);
 });
-
 
     socket.on('disconnect', () => {
         console.log('Player disconnected:', socket.id);

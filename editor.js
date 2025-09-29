@@ -1,20 +1,15 @@
 
+// editor.js - Editor completo de mapa
 const EditorSystem = {
     isEditorMode: false,
     selectedObject: null,
-    draggedObject: null,
-    editorButton: null,
+    selectedPlayer: null,
+    editorPanel: null,
     
-    // Objetos organizados para spawnar na casa
-    houseObjects: [
-        { id: 'small_bed', x: 250, y: 250, width: 80, height: 160, rotation: 0 },
-        { id: 'big_table', x: 400, y: 300, width: 120, height: 80, rotation: 0 },
-        { id: 'mini_sofa', x: 600, y: 250, width: 100, height: 60, rotation: 0 },
-        { id: 'mini_sofa2', x: 700, y: 250, width: 100, height: 60, rotation: Math.PI },
-        { id: 'square_table', x: 500, y: 400, width: 80, height: 80, rotation: 0 },
-        { id: 'big_bed', x: 750, y: 300, width: 120, height: 180, rotation: 0 },
-        { id: 'big_bed2', x: 300, y: 500, width: 120, height: 180, rotation: Math.PI/2 },
-        { id: 'sofa', x: 650, y: 500, width: 140, height: 80, rotation: 0 }
+    objectTypes: [
+        'small_bed', 'big_bed', 'big_bed2', 'big_table', 'square_table',
+        'mini_sofa', 'mini_sofa2', 'sofa', 'car', 'box', 'atm',
+        'park_bench', 'pool_table'
     ],
     
     init() {
@@ -23,143 +18,251 @@ const EditorSystem = {
     },
     
     createEditorButton() {
-        this.editorButton = document.createElement('button');
-        this.editorButton.innerHTML = '🔧';
-        this.editorButton.style.cssText = `
+        const btn = document.createElement('button');
+        btn.innerHTML = 'EDITOR';
+        btn.style.cssText = `
             position: fixed;
-            bottom: 20px;
+            bottom: 100px;
             right: 20px;
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(45deg, #ff6b35, #f7931e);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            font-size: 24px;
+            padding: 15px 25px;
+            background: #000;
+            color: #fff;
+            border: 2px solid #fff;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
             cursor: pointer;
             z-index: 10000;
-            box-shadow: 0 4px 15px rgba(255,107,53,0.4);
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            transition: all 0.3s;
         `;
         
-        this.editorButton.addEventListener('click', () => {
-            this.toggleEditor();
+        btn.addEventListener('click', () => this.toggleEditor());
+        btn.addEventListener('mouseenter', () => {
+            btn.style.background = '#333';
+            btn.style.transform = 'scale(1.05)';
+        });
+        btn.addEventListener('mouseleave', () => {
+            btn.style.background = '#000';
+            btn.style.transform = 'scale(1)';
         });
         
-        document.body.appendChild(this.editorButton);
+        document.body.appendChild(btn);
+        this.editorButton = btn;
     },
     
     toggleEditor() {
         this.isEditorMode = !this.isEditorMode;
-        const me = gameState.players[myId];
         
         if (this.isEditorMode) {
-            this.editorButton.innerHTML = '❌';
-            this.editorButton.style.background = 'linear-gradient(45deg, #ff4757, #ff3838)';
-            
+            this.editorButton.style.background = '#f00';
+            this.editorButton.innerHTML = 'SAIR';
+            this.createEditorPanel();
+            const me = gameState.players[myId];
             if (me) {
                 me._editorMode = true;
                 me._ghostMode = true;
-                this.spawnHouseObjects();
-                socket.emit('toggleEditorMode', { enabled: true });
             }
-            
-            this.showEditorInstructions();
-            
         } else {
-            this.editorButton.innerHTML = '🔧';
-            this.editorButton.style.background = 'linear-gradient(45deg, #ff6b35, #f7931e)';
-            
+            this.editorButton.style.background = '#000';
+            this.editorButton.innerHTML = 'EDITOR';
+            this.closeEditorPanel();
+            const me = gameState.players[myId];
             if (me) {
                 me._editorMode = false;
                 me._ghostMode = false;
-                socket.emit('toggleEditorMode', { enabled: false });
             }
-            
             this.selectedObject = null;
-            this.draggedObject = null;
-            this.hideEditorInstructions();
+            this.selectedPlayer = null;
         }
     },
     
-    spawnHouseObjects() {
-        this.houseObjects.forEach(objData => {
-            const exists = gameState.objects.find(obj => 
-                obj.id === objData.id && 
-                Math.abs(obj.x - objData.x) < 50 && 
-                Math.abs(obj.y - objData.y) < 50
-            );
+    createEditorPanel() {
+        const panel = document.createElement('div');
+        panel.id = 'editorPanel';
+        panel.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            width: 280px;
+            max-height: 80vh;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #fff;
+            border-radius: 10px;
+            padding: 20px;
+            color: #fff;
+            z-index: 9999;
+            overflow-y: auto;
+            font-family: Arial;
+        `;
+        
+        panel.innerHTML = `
+            <h3 style="margin: 0 0 15px 0; text-align: center; border-bottom: 2px solid #fff; padding-bottom: 10px;">EDITOR DE MAPA</h3>
             
-            if (!exists) {
-                const newObj = {
-                    ...objData,
-                    uniqueId: 'house_' + objData.id + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-                };
-                gameState.objects.push(newObj);
-            }
-        });
-    },
-    
-    showEditorInstructions() {
-        const instructions = document.createElement('div');
-        instructions.id = 'editorInstructions';
-        instructions.innerHTML = `
-            <div style="background: rgba(0,0,0,0.9); color: white; padding: 15px; border-radius: 8px; position: fixed; top: 20px; right: 20px; z-index: 10001; max-width: 300px; font-size: 14px;">
-                <h4 style="color: #ff6b35; margin: 0 0 10px 0;">🔧 EDITOR ATIVO</h4>
-                <div style="text-align: left; line-height: 1.3;">
-                    • Modo fantasma ativado<br>
-                    • Clique para selecionar<br>
-                    • Clique novamente para mover<br>
-                    • Q/E para rotacionar<br>
-                    • DEL para deletar
+            <div style="margin-bottom: 20px;">
+                <h4 style="margin: 5px 0;">Adicionar Objeto:</h4>
+                <select id="objectTypeSelect" style="width: 100%; padding: 8px; background: #222; color: #fff; border: 1px solid #fff; border-radius: 5px; margin-bottom: 10px;">
+                    ${this.objectTypes.map(type => `<option value="${type}">${type}</option>`).join('')}
+                </select>
+                <button id="addObjectBtn" style="width: 100%; padding: 10px; background: #0a0; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">ADICIONAR OBJETO</button>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="margin: 5px 0;">Objeto Selecionado:</h4>
+                <div id="selectedObjectInfo" style="padding: 10px; background: #222; border-radius: 5px; min-height: 50px;">
+                    Nenhum objeto selecionado
                 </div>
-                <button onclick="document.getElementById('editorInstructions').remove()" style="background: #ff6b35; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-top: 8px; font-size: 12px;">OK</button>
+                <button id="deleteObjectBtn" style="width: 100%; padding: 10px; background: #f00; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px;">DELETAR SELECIONADO</button>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="margin: 5px 0;">Jogador Selecionado:</h4>
+                <div id="selectedPlayerInfo" style="padding: 10px; background: #222; border-radius: 5px; min-height: 50px;">
+                    Nenhum jogador selecionado
+                </div>
+                <input type="number" id="gemsInput" placeholder="Quantidade de gemas" style="width: 100%; padding: 8px; background: #222; color: #fff; border: 1px solid #fff; border-radius: 5px; margin-top: 10px;">
+                <button id="addGemsBtn" style="width: 100%; padding: 10px; background: #fa0; color: #000; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 5px;">DAR GEMAS</button>
+                <button id="healPlayerBtn" style="width: 100%; padding: 10px; background: #0af; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 5px;">CURAR JOGADOR</button>
+                <button id="killPlayerBtn" style="width: 100%; padding: 10px; background: #f00; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 5px;">INFECTAR JOGADOR</button>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="margin: 5px 0;">Ações Globais:</h4>
+                <button id="clearMapBtn" style="width: 100%; padding: 10px; background: #f90; color: #000; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-bottom: 5px;">LIMPAR MAPA</button>
+                <button id="restartGameBtn" style="width: 100%; padding: 10px; background: #09f; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">REINICIAR PARTIDA</button>
+            </div>
+            
+            <div style="font-size: 12px; opacity: 0.7; margin-top: 15px; border-top: 1px solid #555; padding-top: 10px;">
+                <b>Controles:</b><br>
+                • Clique: Selecionar<br>
+                • Q/E: Rotacionar<br>
+                • Clique+Arraste: Mover<br>
+                • Delete: Remover
             </div>
         `;
-        document.body.appendChild(instructions);
         
-        setTimeout(() => {
-            const elem = document.getElementById('editorInstructions');
-            if (elem) elem.remove();
-        }, 5000);
+        document.body.appendChild(panel);
+        this.editorPanel = panel;
+        this.setupPanelEvents();
     },
     
-    hideEditorInstructions() {
-        const elem = document.getElementById('editorInstructions');
-        if (elem) elem.remove();
+    setupPanelEvents() {
+        document.getElementById('addObjectBtn').onclick = () => {
+            const type = document.getElementById('objectTypeSelect').value;
+            const me = gameState.players[myId];
+            if (!me) return;
+            
+            const newObj = {
+                id: type,
+                x: me.x,
+                y: me.y,
+                width: 80,
+                height: 80,
+                rotation: 0,
+                uniqueId: 'obj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+            };
+            
+            gameState.objects.push(newObj);
+            socket.emit('editorAction', { type: 'add', object: newObj });
+        };
+        
+        document.getElementById('deleteObjectBtn').onclick = () => {
+            if (this.selectedObject) {
+                gameState.objects = gameState.objects.filter(o => o.uniqueId !== this.selectedObject.uniqueId);
+                socket.emit('editorAction', { type: 'delete', objectId: this.selectedObject.uniqueId });
+                this.selectedObject = null;
+                this.updateSelectedInfo();
+            }
+        };
+        
+        document.getElementById('addGemsBtn').onclick = () => {
+            if (this.selectedPlayer) {
+                const amount = parseInt(document.getElementById('gemsInput').value) || 0;
+                socket.emit('editorAction', { type: 'addGems', playerId: this.selectedPlayer.id, amount });
+            }
+        };
+        
+        document.getElementById('healPlayerBtn').onclick = () => {
+            if (this.selectedPlayer) {
+                socket.emit('editorAction', { type: 'heal', playerId: this.selectedPlayer.id });
+            }
+        };
+        
+        document.getElementById('killPlayerBtn').onclick = () => {
+            if (this.selectedPlayer) {
+                socket.emit('editorAction', { type: 'kill', playerId: this.selectedPlayer.id });
+            }
+        };
+        
+        document.getElementById('clearMapBtn').onclick = () => {
+            if (confirm('Limpar todos os objetos do mapa?')) {
+                gameState.objects = [];
+                socket.emit('editorAction', { type: 'clearMap' });
+            }
+        };
+        
+        document.getElementById('restartGameBtn').onclick = () => {
+            if (confirm('Reiniciar a partida?')) {
+                socket.emit('editorAction', { type: 'restart' });
+            }
+        };
+    },
+    
+    closeEditorPanel() {
+        if (this.editorPanel) {
+            this.editorPanel.remove();
+            this.editorPanel = null;
+        }
+    },
+    
+    updateSelectedInfo() {
+        if (!this.editorPanel) return;
+        
+        const objInfo = document.getElementById('selectedObjectInfo');
+        const playerInfo = document.getElementById('selectedPlayerInfo');
+        
+        if (this.selectedObject) {
+            objInfo.innerHTML = `
+                <b>Tipo:</b> ${this.selectedObject.id}<br>
+                <b>X:</b> ${Math.round(this.selectedObject.x)}<br>
+                <b>Y:</b> ${Math.round(this.selectedObject.y)}<br>
+                <b>Rotação:</b> ${this.selectedObject.rotation.toFixed(2)}
+            `;
+        } else {
+            objInfo.innerHTML = 'Nenhum objeto selecionado';
+        }
+        
+        if (this.selectedPlayer) {
+            playerInfo.innerHTML = `
+                <b>Nome:</b> ${this.selectedPlayer.name}<br>
+                <b>Role:</b> ${this.selectedPlayer.role}<br>
+                <b>Gemas:</b> ${this.selectedPlayer.gems}<br>
+                <b>Velocidade:</b> ${this.selectedPlayer.speed}
+            `;
+        } else {
+            playerInfo.innerHTML = 'Nenhum jogador selecionado';
+        }
     },
     
     setupEditorEvents() {
         document.addEventListener('keydown', (e) => {
-            if (!this.isEditorMode || !this.selectedObject) return;
+            if (!this.isEditorMode) return;
             
-            switch(e.key.toLowerCase()) {
-                case 'q':
+            if (this.selectedObject) {
+                if (e.key.toLowerCase() === 'q') {
                     this.selectedObject.rotation -= 0.1;
-                    socket.emit('editorAction', { 
-                        type: 'rotate', 
-                        objectId: this.selectedObject.uniqueId, 
-                        rotation: this.selectedObject.rotation 
-                    });
-                    break;
-                case 'e':
+                    socket.emit('editorAction', { type: 'rotate', objectId: this.selectedObject.uniqueId, rotation: this.selectedObject.rotation });
+                    this.updateSelectedInfo();
+                } else if (e.key.toLowerCase() === 'e') {
                     this.selectedObject.rotation += 0.1;
-                    socket.emit('editorAction', { 
-                        type: 'rotate', 
-                        objectId: this.selectedObject.uniqueId, 
-                        rotation: this.selectedObject.rotation 
-                    });
-                    break;
-                case 'delete':
-                    socket.emit('editorAction', { 
-                        type: 'delete', 
-                        objectId: this.selectedObject.uniqueId 
-                    });
+                    socket.emit('editorAction', { type: 'rotate', objectId: this.selectedObject.uniqueId, rotation: this.selectedObject.rotation });
+                    this.updateSelectedInfo();
+                } else if (e.key === 'Delete') {
+                    gameState.objects = gameState.objects.filter(o => o.uniqueId !== this.selectedObject.uniqueId);
+                    socket.emit('editorAction', { type: 'delete', objectId: this.selectedObject.uniqueId });
                     this.selectedObject = null;
-                    break;
+                    this.updateSelectedInfo();
+                }
             }
         });
     },
@@ -167,67 +270,61 @@ const EditorSystem = {
     handleClick(worldX, worldY) {
         if (!this.isEditorMode) return false;
         
-        if (this.selectedObject && this.draggedObject) {
-            // Soltar objeto
-            this.selectedObject.x = worldX - this.selectedObject.width / 2;
-            this.selectedObject.y = worldY - this.selectedObject.height / 2;
-            
-            socket.emit('editorAction', {
-                type: 'move',
-                objectId: this.selectedObject.uniqueId,
-                x: this.selectedObject.x,
-                y: this.selectedObject.y
-            });
-            
-            this.draggedObject = null;
-            return true;
+        // Primeiro verificar se clicou em jogador
+        for (let playerId in gameState.players) {
+            const player = gameState.players[playerId];
+            if (worldX >= player.x && worldX <= player.x + player.width &&
+                worldY >= player.y && worldY <= player.y + player.height) {
+                this.selectedPlayer = player;
+                this.selectedObject = null;
+                this.updateSelectedInfo();
+                return true;
+            }
         }
         
-        //selecionar objeto
-        const clickedObject = this.findObjectAt(worldX, worldY);
-        if (clickedObject) {
-            this.selectedObject = clickedObject;
-            this.draggedObject = clickedObject;
+        // Depois verificar objetos
+        for (let obj of gameState.objects) {
+            if (worldX >= obj.x && worldX <= obj.x + obj.width &&
+                worldY >= obj.y && worldY <= obj.y + obj.height) {
+                this.selectedObject = obj;
+                this.selectedPlayer = null;
+                this.updateSelectedInfo();
+                return true;
+            }
+        }
+        
+        // Se não clicou em nada, mover objeto selecionado
+        if (this.selectedObject) {
+            this.selectedObject.x = worldX - this.selectedObject.width / 2;
+            this.selectedObject.y = worldY - this.selectedObject.height / 2;
+            socket.emit('editorAction', { type: 'move', objectId: this.selectedObject.uniqueId, x: this.selectedObject.x, y: this.selectedObject.y });
+            this.updateSelectedInfo();
             return true;
         }
         
         return false;
     },
     
-    findObjectAt(x, y) {
-        
-        for (let obj of gameState.objects) {
-            if (x >= obj.x && x <= obj.x + obj.width &&
-                y >= obj.y && y <= obj.y + obj.height) {
-                return obj;
-            }
-        }
-
-        for (let playerId in gameState.players) {
-            const player = gameState.players[playerId];
-            if (x >= player.x && x <= player.x + player.width &&
-                y >= player.y && y <= player.y + player.height) {
-                return player;
-            }
-        }
-        
-        return null;
-    },
-    
     drawEditorUI(ctx) {
         if (!this.isEditorMode) return;
         
+        // Highlight objeto selecionado
         if (this.selectedObject) {
             ctx.save();
-            ctx.strokeStyle = '#ff6b35';
+            ctx.strokeStyle = '#0f0';
             ctx.lineWidth = 3;
             ctx.setLineDash([10, 5]);
-            ctx.strokeRect(
-                this.selectedObject.x, 
-                this.selectedObject.y, 
-                this.selectedObject.width, 
-                this.selectedObject.height
-            );
+            ctx.strokeRect(this.selectedObject.x, this.selectedObject.y, this.selectedObject.width, this.selectedObject.height);
+            ctx.restore();
+        }
+        
+        // Highlight jogador selecionado
+        if (this.selectedPlayer) {
+            ctx.save();
+            ctx.strokeStyle = '#ff0';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([10, 5]);
+            ctx.strokeRect(this.selectedPlayer.x, this.selectedPlayer.y, this.selectedPlayer.width, this.selectedPlayer.height);
             ctx.restore();
         }
     }
@@ -235,4 +332,5 @@ const EditorSystem = {
 
 if (typeof window !== 'undefined') {
     window.EditorSystem = EditorSystem;
+    document.addEventListener('DOMContentLoaded', () => EditorSystem.init());
 }
