@@ -11,16 +11,44 @@ const io = new Server(server);
 
 const commands = require('./commands');
 
+const MAX_MESSAGE = 1000;
 let chatMessages = [];
 
-const MAX_MESSAGE = 1000;
+// --- Estado do jogo ---
+let gameState = {
+    players: {},
+    objects: [],
+    timeLeft: 120,
+    startTime: 60,
+    gamePhase: 'waiting'
+};
 
+// --- Dados persistentes ---
+const USERS_FILE = path.join(__dirname, "users.json");
+const MESSAGES_FILE = path.join(__dirname, "messages.json");
+const LINKS_FILE = path.join(__dirname, "links.json");
+
+let users = fs.existsSync(USERS_FILE) ? fs.readJsonSync(USERS_FILE) : {};
+let messages = fs.existsSync(MESSAGES_FILE) ? fs.readJsonSync(MESSAGES_FILE) : {};
+let links = fs.existsSync(LINKS_FILE) ? fs.readJsonSync(LINKS_FILE) : [];
+
+function saveUsers() {
+    fs.writeJsonSync(USERS_FILE, users, { spaces: 2 });
+}
+
+// --- Middlewares ---
+app.use(express.static(__dirname));
+app.use(express.json());
+
+// --- Socket.io ---
 io.on('connection', (socket) => {
     console.log("Novo cliente conectado:", socket.id);
 
-    // Envia o estado inicial só para o cliente que acabou de entrar
+    // Envia estado inicial
     socket.emit('gameStateUpdate', gameState);
+    socket.emit('chatMessage', chatMessages);
 
+    // Ações do editor
     socket.on('editorAction', (data) => {
         switch (data.type) {
             case 'add':
@@ -28,10 +56,7 @@ io.on('connection', (socket) => {
                 break;
             case 'move':
                 const obj = gameState.objects.find(o => o.uniqueId === data.objectId);
-                if (obj) {
-                    obj.x = data.x;
-                    obj.y = data.y;
-                }
+                if (obj) { obj.x = data.x; obj.y = data.y; }
                 break;
             case 'rotate':
                 const rotObj = gameState.objects.find(o => o.uniqueId === data.objectId);
@@ -68,18 +93,14 @@ io.on('connection', (socket) => {
                 break;
         }
 
-        // Atualiza todos os clientes com o novo estado
+        });
+
         io.emit('gameStateUpdate', gameState);
     });
 
     socket.on('sendMessage', (data) => {
         chatMessages.push(data);
-
-        // Mantém limite de mensagens
-        if (chatMessages.length > MAX_MESSAGE) {
-            chatMessages.shift();
-        }
-
+    socket.on('sendMessage', (data) => {
         io.emit('chatMessage', chatMessages);
     });
 });
@@ -102,15 +123,6 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static(__dirname));
 app.use(express.json());
 
-const USERS_FILE = path.join(__dirname, "users.json");
-const MESSAGES_FILE = path.join(__dirname, "messages.json");
-const LINKS_FILE = path.join(__dirname, "links.json");
-
-let users = {};
-let gameState = {};
-let sockets = {};
-let messages = {};
-let links = [];
 
 if (fs.existsSync(USERS_FILE)) users = fs.readJsonSync(USERS_FILE);
 if (fs.existsSync(MESSAGES_FILE)) messages = fs.readJsonSync(MESSAGES_FILE);
