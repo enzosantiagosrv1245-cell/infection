@@ -14,6 +14,8 @@ const commands = require('./commands');
 const MAX_MESSAGE = 1000;
 let chatMessages = [];
 
+let a = "abc"
+
 // --- Estado do jogo ---
 let gameState = {
     players: {},
@@ -104,7 +106,7 @@ io.on('connection', (socket) => {
         io.emit('chatMessage', chatMessages);
     });
 });
-
+ 
 app.use(express.static(__dirname));
 app.use(express.json());
 
