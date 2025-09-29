@@ -2470,7 +2470,7 @@ socket.on('sendMessage', (messageText) => {
     };
     
     chatMessage.push(message);
-    if (chatMessages.length > MAX_MESSAGES) {
+    if (chatMessages.length > MAX_MESSAGE) {
         chatMessages.shift();
     }
     
