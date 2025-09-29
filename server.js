@@ -16,9 +16,9 @@ const commands = require('./commands');
 let chatMessages = [];
 
 io.on('connection', (socket) => {
-    
+
 socket.on('sendMessage', (data) => {
-  // Armazena a mensagem no array
+    
   chatMessages.push(data);
 
   // Emite para todos os clientes a nova lista de mensagens
