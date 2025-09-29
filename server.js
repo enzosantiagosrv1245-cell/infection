@@ -15,6 +15,8 @@ const commands = require('./commands');
 
 let chatMessages = [];
 
+const MAX_MESSAGE = 1000;
+
 io.on('connection', (socket) => {
 
 socket.on('sendMessage', (data) => {
