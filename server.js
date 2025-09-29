@@ -13,16 +13,16 @@ const io = new Server(server);
 
 const commands = require('./commands');
 
-let chatMessages = [];
+let chatMessage = [];
 
 io.on('connection', (socket) => {
 
 socket.on('sendMessage', (data) => {
-    
-  chatMessages.push(data);
+
+  chatMessage.push(data);
 
   // Emite para todos os clientes a nova lista de mensagens
-  io.emit('chatMessages', chatMessages);
+  io.emit('chatMessage', chatMessage);
 });
 
 socket.on('authenticateEmail', (email) => {
