@@ -38,7 +38,7 @@ socket.on('authenticateEmail', (email) => {
     }
 });
 
-});
+
 // Sistema de editor
 socket.on('toggleEditorMode', (data) => {
     const player = gameState.players[socket.id];
@@ -76,6 +76,7 @@ socket.on('editorAction', (data) => {
     io.emit('gameStateUpdate', gameState);
 });
 
+});
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(__dirname));
