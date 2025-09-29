@@ -1,8 +1,6 @@
 const express = require('express');
 const http = require('http');
-const {
-    Server
-} = require("socket.io");
+const { Server } = require("socket.io");
 const Matter = require('matter-js');
 const fs = require('fs-extra');
 const path = require('path');
@@ -17,59 +15,93 @@ let chatMessages = [];
 
 const MAX_MESSAGE = 1000;
 
+// ✅ Declaração única do gameState
+let gameState = {
+    players: {},
+    objects: [],
+    timeLeft: 120,
+    startTime: 60,
+    gamePhase: 'waiting'
+};
+
 io.on('connection', (socket) => {
+    console.log("Novo cliente conectado:", socket.id);
 
-socket.on('editorAction', (data) => {
-    switch(data.type) {
-        case 'add':
-            gameState.objects.push(data.object);
-            break;
-        case 'move':
-            const obj = gameState.objects.find(o => o.uniqueId === data.objectId);
-            if (obj) {
-                obj.x = data.x;
-                obj.y = data.y;
-            }
-            break;
-        case 'rotate':
-            const rotObj = gameState.objects.find(o => o.uniqueId === data.objectId);
-            if (rotObj) rotObj.rotation = data.rotation;
-            break;
-        case 'delete':
-            gameState.objects = gameState.objects.filter(o => o.uniqueId !== data.objectId);
-            break;
-        case 'addGems':
-            const gemPlayer = gameState.players[data.playerId];
-            if (gemPlayer) gemPlayer.gems += data.amount;
-            break;
-        case 'heal':
-            const healPlayer = gameState.players[data.playerId];
-            if (healPlayer) healPlayer.role = 'human';
-            break;
-        case 'kill':
-            const killPlayer = gameState.players[data.playerId];
-            if (killPlayer) killPlayer.role = 'zombie';
-            break;
-        case 'clearMap':
-            gameState.objects = [];
-            break;
-        case 'restart':
-            gameState.timeLeft = 120;
-            gameState.startTime = 60;
-            gameState.gamePhase = 'waiting';
-            break;
-    }
-    
-    io.emit('gameStateUpdate', gameState);
+    // Envia o estado inicial só para o cliente que acabou de entrar
+    socket.emit('gameStateUpdate', gameState);
+
+    socket.on('editorAction', (data) => {
+        switch (data.type) {
+            case 'add':
+                gameState.objects.push(data.object);
+                break;
+            case 'move':
+                const obj = gameState.objects.find(o => o.uniqueId === data.objectId);
+                if (obj) {
+                    obj.x = data.x;
+                    obj.y = data.y;
+                }
+                break;
+            case 'rotate':
+                const rotObj = gameState.objects.find(o => o.uniqueId === data.objectId);
+                if (rotObj) rotObj.rotation = data.rotation;
+                break;
+            case 'delete':
+                gameState.objects = gameState.objects.filter(o => o.uniqueId !== data.objectId);
+                break;
+            case 'addGems':
+                const gemPlayer = gameState.players[data.playerId];
+                if (gemPlayer) gemPlayer.gems += data.amount;
+                break;
+            case 'heal':
+                const healPlayer = gameState.players[data.playerId];
+                if (healPlayer) healPlayer.role = 'human';
+                break;
+            case 'kill':
+                const killPlayer = gameState.players[data.playerId];
+                if (killPlayer) killPlayer.role = 'zombie';
+                break;
+            case 'clearMap':
+                gameState.objects = [];
+                break;
+            case 'restart':
+
+                // Aqui reinicia o estado do jogo sem redeclarar
+                gameState = {
+                    players: {},
+                    objects: [],
+                    timeLeft: 120,
+                    startTime: 60,
+                    gamePhase: 'waiting'
+                };
+                break;
+        }
+
+        // Atualiza todos os clientes com o novo estado
+        io.emit('gameStateUpdate', gameState);
+    });
+
+    socket.on('sendMessage', (data) => {
+        chatMessages.push(data);
+
+        // Mantém limite de mensagens
+        if (chatMessages.length > MAX_MESSAGE) {
+            chatMessages.shift();
+        }
+
+        io.emit('chatMessage', chatMessages);
+    });
 });
 
-socket.on('sendMessage', (data) => {
+app.use(express.static(__dirname));
+app.use(express.json());
 
-  chatMessages.push(data);
+        // Mantém limite de mensagens
+        if (chatMessages.length > MAX_MESSAGE) {
+            chatMessages.shift();
+        }
 
-  io.emit('chatMessage', chatMessages);
-});
-        });
+        io.emit('chatMessage', chatMessages);
 
     io.emit('gameStateUpdate', gameState);
 
@@ -117,7 +149,6 @@ function generateID() {
 const TICK_RATE = 1000 / 60;
 let engine, world;
 let bodiesMap = {};
-let gameState = {};
 let nextArrowId = 0,
     nextGrenadeId = 0,
     nextTrapId = 0,
