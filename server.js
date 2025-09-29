@@ -2453,7 +2453,7 @@ io.on('connection', (socket) => {
                 break;
         }
     });
-//chat
+//chatr
 socket.on('sendMessage', (messageText) => {
     const player = gameState.players[socket.id];
     if (!player) return;
