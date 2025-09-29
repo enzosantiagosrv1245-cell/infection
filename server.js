@@ -13,7 +13,7 @@ const io = new Server(server);
 
 const commands = require('./commands');
 
-let chatMessage = [];
+let chatMessages = [];
 
 io.on('connection', (socket) => {
 
@@ -2469,7 +2469,7 @@ socket.on('sendMessage', (messageText) => {
         isZombie: player.role === 'zombie'
     };
     
-    chatMessage.push(message);
+    chatMessages.push(message);
     if (chatMessages.length > MAX_MESSAGE) {
         chatMessages.shift();
     }
