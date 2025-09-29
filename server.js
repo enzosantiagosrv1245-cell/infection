@@ -2469,7 +2469,7 @@ socket.on('sendMessage', (messageText) => {
         isZombie: player.role === 'zombie'
     };
     
-    chatMessages.push(message);
+    chatMessage.push(message);
     if (chatMessages.length > MAX_MESSAGES) {
         chatMessages.shift();
     }
