@@ -19,7 +19,7 @@ io.on('connection', (socket) => {
 
 socket.on('sendMessage', (data) => {
 
-  chatMessage.push(data);
+  chatMessages.push(data);
 
   // Emite para todos os clientes a nova lista de mensagens
   io.emit('chatMessage', chatMessage);
