@@ -9,6 +9,13 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+const { JSDOM } = require('jsdom');
+const dom = new JSDOM(`<!DOCTYPE html><canvas id="gameCanvas"></canvas>`);
+const document = dom.window.document;
+
+const canvas = document.getElementById('gameCanvas');
+console.log(canvas);
+
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(__dirname));
