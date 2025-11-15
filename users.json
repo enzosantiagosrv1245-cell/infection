@@ -38,5 +38,35 @@
     "editedName": false,
     "friends": [],
     "requests": []
+  },
+  "mingau": {
+    "id": "ID631748",
+    "username": "mingau",
+    "password": "dev",
+    "color": "#3498db",
+    "photo": null,
+    "editedName": false,
+    "friends": [],
+    "requests": []
+  },
+  "User098": {
+    "id": "ID190720",
+    "username": "User098",
+    "password": "1",
+    "color": "#3498db",
+    "photo": null,
+    "editedName": false,
+    "friends": [],
+    "requests": []
+  },
+  "User09845": {
+    "id": "ID495975",
+    "username": "User09845",
+    "password": "ytut",
+    "color": "#3498db",
+    "photo": null,
+    "editedName": false,
+    "friends": [],
+    "requests": []
   }
 }

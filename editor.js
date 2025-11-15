@@ -4,6 +4,7 @@ const EditorSystem = {
     isEditorMode: false,
     selectedObject: null,
     selectedPlayer: null,
+    isDraggingSelected: false,
     editorPanel: null,
     
     objectTypes: [
@@ -152,25 +153,43 @@ const EditorSystem = {
             const me = gameState.players[myId];
             if (!me) return;
             
+            // map default sizes by type (can be extended)
+            const sizeMap = {
+                small_bed: { w: 138, h: 230 },
+                big_bed: { w: 180, h: 260 },
+                big_bed2: { w: 200, h: 260 },
+                big_table: { w: 380, h: 200 },
+                square_table: { w: 170, h: 170 },
+                mini_sofa: { w: 120, h: 100 },
+                mini_sofa2: { w: 120, h: 100 },
+                sofa: { w: 230, h: 100 },
+                car: { w: 280, h: 450 },
+                box: { w: 192, h: 192 },
+                atm: { w: 150, h: 130 },
+                park_bench: { w: 100, h: 240 },
+                pool_table: { w: 340, h: 210 }
+            };
+
+            const s = sizeMap[type] || { w: 80, h: 80 };
             const newObj = {
                 id: type,
                 x: me.x,
                 y: me.y,
-                width: 80,
-                height: 80,
+                width: s.w,
+                height: s.h,
                 rotation: 0,
-                uniqueId: 'obj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+                isStatic: false
             };
-            
-            gameState.objects.push(newObj);
+
+            // send to server; server will create the physics body and broadcast the new gameState
             socket.emit('editorAction', { type: 'add', object: newObj });
         };
         
         document.getElementById('deleteObjectBtn').onclick = () => {
             if (this.selectedObject) {
-                gameState.objects = gameState.objects.filter(o => o.uniqueId !== this.selectedObject.uniqueId);
                 socket.emit('editorAction', { type: 'delete', objectId: this.selectedObject.uniqueId });
                 this.selectedObject = null;
+                this.isDraggingSelected = false;
                 this.updateSelectedInfo();
             }
         };
@@ -196,7 +215,6 @@ const EditorSystem = {
         
         document.getElementById('clearMapBtn').onclick = () => {
             if (confirm('Limpar todos os objetos do mapa?')) {
-                gameState.objects = [];
                 socket.emit('editorAction', { type: 'clearMap' });
             }
         };
@@ -265,35 +283,91 @@ const EditorSystem = {
                 }
             }
         });
+        // mouse move: if dragging, update selected object/player position to follow pointer
+        document.addEventListener('mousemove', (e) => {
+            if (!this.isEditorMode) return;
+            if (!this.isDraggingSelected) return;
+            const coords = this.getWorldCoordsFromMouse();
+            if (this.selectedObject) {
+                this.selectedObject.x = coords.x - (this.selectedObject.width || 80) / 2;
+                this.selectedObject.y = coords.y - (this.selectedObject.height || 80) / 2;
+                this.updateSelectedInfo();
+            } else if (this.selectedPlayer) {
+                this.selectedPlayer.x = coords.x - (this.selectedPlayer.width || 40) / 2;
+                this.selectedPlayer.y = coords.y - (this.selectedPlayer.height || 40) / 2;
+                this.updateSelectedInfo();
+            }
+        });
+    },
+
+    // compute world coords from current global mouse and camera
+    getWorldCoordsFromMouse() {
+        const zoomLevel = 0.67;
+        const me = gameState.players[myId];
+        if (!me) return { x: 0, y: 0 };
+        const cameraX = (me.x + me.width / 2) - (canvas.width / (2 * zoomLevel));
+        const cameraY = (me.y + me.height / 2) - (canvas.height / (2 * zoomLevel));
+        return { x: mouse.x / zoomLevel + cameraX, y: mouse.y / zoomLevel + cameraY };
     },
     
     handleClick(worldX, worldY) {
         if (!this.isEditorMode) return false;
-        
-        // Primeiro verificar se clicou em jogador
+        // If currently dragging a selected object/player, a click releases it
+        if (this.isDraggingSelected) {
+            if (this.selectedObject) {
+                this.isDraggingSelected = false;
+                socket.emit('editorAction', { type: 'move', objectId: this.selectedObject.uniqueId, x: this.selectedObject.x, y: this.selectedObject.y });
+                this.updateSelectedInfo();
+                return true;
+            }
+            if (this.selectedPlayer) {
+                this.isDraggingSelected = false;
+                socket.emit('editorAction', { type: 'movePlayer', playerId: this.selectedPlayer.id, x: this.selectedPlayer.x, y: this.selectedPlayer.y });
+                this.updateSelectedInfo();
+                return true;
+            }
+        }
+
+        // Check players first
         for (let playerId in gameState.players) {
             const player = gameState.players[playerId];
             if (worldX >= player.x && worldX <= player.x + player.width &&
                 worldY >= player.y && worldY <= player.y + player.height) {
-                this.selectedPlayer = player;
-                this.selectedObject = null;
-                this.updateSelectedInfo();
+                // prompt selection
+                if (this.selectedPlayer && this.selectedPlayer.id === player.id) {
+                    // already selected - start dragging
+                    this.isDraggingSelected = true;
+                    return true;
+                }
+                if (confirm('Selecionar jogador ' + player.name + ' ?')) {
+                    this.selectedPlayer = player;
+                    this.selectedObject = null;
+                    this.isDraggingSelected = true;
+                    this.updateSelectedInfo();
+                }
                 return true;
             }
         }
-        
-        // Depois verificar objetos
+
+        // Then objects
         for (let obj of gameState.objects) {
             if (worldX >= obj.x && worldX <= obj.x + obj.width &&
                 worldY >= obj.y && worldY <= obj.y + obj.height) {
-                this.selectedObject = obj;
-                this.selectedPlayer = null;
-                this.updateSelectedInfo();
+                if (this.selectedObject && this.selectedObject.uniqueId === obj.uniqueId) {
+                    this.isDraggingSelected = true;
+                    return true;
+                }
+                if (confirm('Selecionar objeto ' + obj.id + ' ?')) {
+                    this.selectedObject = obj;
+                    this.selectedPlayer = null;
+                    this.isDraggingSelected = true;
+                    this.updateSelectedInfo();
+                }
                 return true;
             }
         }
-        
-        // Se não clicou em nada, mover objeto selecionado
+
+        // If clicked empty space and an object is selected, start dragging it immediately
         if (this.selectedObject) {
             this.selectedObject.x = worldX - this.selectedObject.width / 2;
             this.selectedObject.y = worldY - this.selectedObject.height / 2;
@@ -301,7 +375,7 @@ const EditorSystem = {
             this.updateSelectedInfo();
             return true;
         }
-        
+
         return false;
     },
     

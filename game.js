@@ -270,7 +270,40 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof EditorSystem !== 'undefined') {
         EditorSystem.init();
     }
+    createCommandListUI();
 });
+
+function createCommandListUI() {
+    const existing = document.getElementById('commandListPanel');
+    if (existing) return;
+    const panel = document.createElement('div');
+    panel.id = 'commandListPanel';
+    panel.style.cssText = `position: fixed; right: 10px; top: 100px; width: 260px; max-height: 70vh; overflow:auto; background: rgba(0,0,0,0.85); color: white; border: 2px solid #fff; border-radius: 8px; padding: 10px; z-index:10000; font-family: Arial; font-size:13px;`;
+    panel.innerHTML = `<h4 style="margin:4px 0 8px 0;text-align:center;">Comandos</h4>`;
+    const commands = [
+        '/help', '/godmode on', '/godmode off', '/mute <name>', '/unmute <name>', '/ban <name>', '/kick <name>', '/rename <newName>', '/rename <oldName> <newName>'
+    ];
+    const list = document.createElement('ul');
+    list.style.padding = '0 10px 10px 20px';
+    commands.forEach(cmd => {
+        const li = document.createElement('li');
+        li.style.marginBottom = '6px';
+        li.style.cursor = 'pointer';
+        li.textContent = cmd;
+        li.title = 'Clique para inserir no chat';
+        li.onclick = () => {
+            const chatInputEl = document.getElementById('chatInput');
+            if (chatInputEl) {
+                chatInputEl.style.display = 'block';
+                chatInputEl.value = cmd + ' ';
+                chatInputEl.focus();
+            }
+        };
+        list.appendChild(li);
+    });
+    panel.appendChild(list);
+    document.body.appendChild(panel);
+}
 
 if (key === '¨') {
         event.preventDefault();

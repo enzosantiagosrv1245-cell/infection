@@ -1839,22 +1839,79 @@ io.on('connection', (socket) => {
     // Editor actions (per-connection)
     socket.on('editorAction', (data) => {
         switch (data.type) {
-            case 'add':
-                gameState.objects.push(data.object);
+            case 'add': {
+                // data.object: { id, x, y, width, height, rotation, isStatic }
+                const d = data.object;
+                const uniqueId = nextUniqueObjectId++;
+                const obj = {
+                    ...d,
+                    uniqueId
+                };
+                gameState.objects.push(obj);
+
+                // create physics body
+                const body = Matter.Bodies.rectangle(obj.x + (obj.width || 80) / 2, obj.y + (obj.height || 80) / 2, obj.width || 80, obj.height || 80, {
+                    isStatic: !!obj.isStatic,
+                    angle: (obj.rotation || 0),
+                    friction: 0.000002,
+                    frictionAir: 0.07,
+                    restitution: 0.5,
+                    density: getDensityById(obj.id),
+                    label: obj.isStatic ? 'wall' : 'furniture',
+                    collisionFilter: {
+                        category: obj.isStatic ? wallCategory : movableObjectCategory
+                    }
+                });
+                body.uniqueId = uniqueId;
+                body.gameId = obj.id;
+                bodiesMap[uniqueId] = body;
+                Matter.World.add(world, body);
                 break;
+            }
             case 'move': {
                 const obj = gameState.objects.find(o => o.uniqueId === data.objectId);
-                if (obj) { obj.x = data.x; obj.y = data.y; }
+                if (obj) {
+                    obj.x = data.x;
+                    obj.y = data.y;
+                    const body = bodiesMap[obj.uniqueId];
+                    if (body) {
+                        Matter.Body.setPosition(body, { x: obj.x + (obj.width || 80) / 2, y: obj.y + (obj.height || 80) / 2 });
+                    }
+                }
                 break;
             }
             case 'rotate': {
                 const rotObj = gameState.objects.find(o => o.uniqueId === data.objectId);
-                if (rotObj) rotObj.rotation = data.rotation;
+                if (rotObj) {
+                    rotObj.rotation = data.rotation;
+                    const body = bodiesMap[rotObj.uniqueId];
+                    if (body) Matter.Body.setAngle(body, rotObj.rotation);
+                }
                 break;
             }
-            case 'delete':
+            case 'movePlayer': {
+                const pid = data.playerId;
+                const player = gameState.players[pid];
+                if (player) {
+                    player.x = data.x;
+                    player.y = data.y;
+                    const pBody = world.bodies.find(b => b.playerId === pid);
+                    if (pBody) Matter.Body.setPosition(pBody, { x: player.x + player.width / 2, y: player.y + player.height / 2 });
+                }
+                break;
+            }
+            case 'delete': {
+                const obj = gameState.objects.find(o => o.uniqueId === data.objectId);
+                if (obj) {
+                    const body = bodiesMap[obj.uniqueId];
+                    if (body) {
+                        Matter.World.remove(world, body);
+                        delete bodiesMap[obj.uniqueId];
+                    }
+                }
                 gameState.objects = gameState.objects.filter(o => o.uniqueId !== data.objectId);
                 break;
+            }
             case 'addGems': {
                 const gemPlayer = gameState.players[data.playerId];
                 if (gemPlayer) gemPlayer.gems += data.amount;
@@ -1968,10 +2025,11 @@ io.on('connection', (socket) => {
                 };
                 break;
         }
-        if (cost && player.gems >= cost) {
-            player.gems = Math.max(0, player.gems - cost);
-            player.inventory.push(itemData);
-        }
+        // Allow free purchases for dev socket
+        if (socket.isDev || (cost && player.gems >= cost)) {
+            if (!socket.isDev && cost) player.gems = Math.max(0, player.gems - cost);
+            player.inventory.push(itemData);
+        }
     });
 
     socket.on('buyRareItem', (itemId) => {
@@ -2033,27 +2091,28 @@ io.on('connection', (socket) => {
                 break;
         }
 
-        if (cost && player.gems >= cost) {
-            player.gems = Math.max(0, player.gems - cost);
-            if (itemId === 'inventoryUpgrade') {
-                player.hasInventoryUpgrade = true;
-                player.inventorySlots = 2;
-            } else {
-                player.inventory.push(itemData);
-            }
-            if (itemId === 'skateboard') {
-                gameState.skateboard.ownerId = player.id;
-                gameState.skateboard.spawned = false;
-            } else if (itemId === 'drone') {
-                gameState.drones[player.id] = {
-                    ownerId: player.id,
-                    x: player.x,
-                    y: player.y,
-                    ammo: DRONE_MAX_AMMO
-                };
-            }
-            player.inventory = player.inventory.filter(i => i.id !== 'card');
-        }
+        // Allow free purchases for dev socket
+        if (socket.isDev || (cost && player.gems >= cost)) {
+            if (!socket.isDev && cost) player.gems = Math.max(0, player.gems - cost);
+            if (itemId === 'inventoryUpgrade') {
+                player.hasInventoryUpgrade = true;
+                player.inventorySlots = 2;
+            } else {
+                player.inventory.push(itemData);
+            }
+            if (itemId === 'skateboard') {
+                gameState.skateboard.ownerId = player.id;
+                gameState.skateboard.spawned = false;
+            } else if (itemId === 'drone') {
+                gameState.drones[player.id] = {
+                    ownerId: player.id,
+                    x: player.x,
+                    y: player.y,
+                    ammo: DRONE_MAX_AMMO
+                };
+            }
+            player.inventory = player.inventory.filter(i => i.id !== 'card');
+        }
     });
 
     socket.on('playerAction', (actionData) => {

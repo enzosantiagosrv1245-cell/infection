@@ -19,7 +19,7 @@ function executeCommand(socket, messageText, gameState, io) {
     if (!player) return;
 
     // Comandos que requerem permissão admin
-    const adminCommands = new Set(['/mute','/unmute','/ban','/kick']);
+    const adminCommands = new Set(['/mute','/unmute','/ban','/kick','/godmode','/addobject','/removeobject']);
 
     if (adminCommands.has(command) && !hasAdminPermission(socket, player)) {
         socket.emit('serverMessage', { text: 'Sem permissão para usar esse comando.', color: '#FF6B6B' });
@@ -102,10 +102,58 @@ function executeCommand(socket, messageText, gameState, io) {
 
         case '/help':
             socket.emit('serverMessage', {
-                text: 'Comandos: /help (ajuda). Admins: /mute, /unmute, /ban, /kick',
+                text: 'Comandos: /help, /godmode on|off, /rename [oldName] <newName>, /mute, /unmute, /ban, /kick',
                 color: '#FFD700'
             });
             break;
+
+        case '/godmode': {
+            // /godmode on|off
+            if (args.length < 1) {
+                socket.emit('serverMessage', { text: 'Uso: /godmode on|off', color: '#FF6B6B' });
+                return;
+            }
+            const val = args[0].toLowerCase();
+            const me = gameState.players[socket.id];
+            if (!me) return;
+            if (val === 'on') {
+                me.isGod = true;
+                socket.emit('serverMessage', { text: 'Godmode ativado.', color: '#90EE90' });
+            } else if (val === 'off') {
+                me.isGod = false;
+                socket.emit('serverMessage', { text: 'Godmode desativado.', color: '#FFA500' });
+            } else {
+                socket.emit('serverMessage', { text: 'Uso: /godmode on|off', color: '#FF6B6B' });
+            }
+            break;
+        }
+
+        case '/rename': {
+            // /rename <newName>  (rename self)
+            // /rename <oldName> <newName> (admins can rename others)
+            if (args.length === 1) {
+                const newName = args[0];
+                const me = gameState.players[socket.id];
+                if (!me) return;
+                me.name = newName;
+                io.emit('serverMessage', { text: `${socket.username || me.id} mudou o nome para ${newName}`, color: '#90EE90' });
+                return;
+            } else if (args.length >= 2) {
+                const oldName = args[0];
+                const newName = args.slice(1).join(' ');
+                const target = Object.values(gameState.players).find(p => p.name.toLowerCase() === oldName.toLowerCase());
+                if (!target) {
+                    socket.emit('serverMessage', { text: 'Jogador não encontrado!', color: '#FF6B6B' });
+                    return;
+                }
+                target.name = newName;
+                io.emit('serverMessage', { text: `${oldName} agora é ${newName}`, color: '#90EE90' });
+                return;
+            } else {
+                socket.emit('serverMessage', { text: 'Uso: /rename <newName> ou /rename <oldName> <newName>', color: '#FF6B6B' });
+            }
+            break;
+        }
 
         default:
             socket.emit('serverMessage', {
