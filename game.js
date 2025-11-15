@@ -1,8 +1,24 @@
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+let canvas = document.getElementById('gameCanvas');
+let ctx = canvas ? canvas.getContext('2d') : null;
+
+// Garante que o canvas existe e está pronto
+function ensureCanvas() {
+    if (!canvas) {
+        canvas = document.getElementById('gameCanvas');
+        if (!canvas) {
+            console.error('ERRO: Canvas não encontrado no DOM!');
+            return false;
+        }
+    }
+    if (!ctx) ctx = canvas.getContext('2d');
+    return true;
+}
+
 // const socket = io(); // Assuming socket is initialized in HTML
 
 (function setup() {
+    if (!ensureCanvas()) return;
+    
     const chatInput = document.getElementById('chatInput');
     const body = document.body;
     Object.assign(body.style, {
@@ -11,11 +27,13 @@ const ctx = canvas.getContext('2d');
         overflow: 'hidden'
     });
 
-    chatInput.maxLength = 57;
+    if (chatInput) chatInput.maxLength = 57;
 
     function resizeCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        if (canvas) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
     }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
@@ -166,11 +184,23 @@ socket.on('connect', () => {
 
 // Chamado pelo menu quando o usuário clica em "Play".
 function startGame(username) {
+    console.log("startGame chamado com username:", username);
     if (!username) return;
+    
+    // Garante que canvas e context estão prontos
+    if (!ensureCanvas()) {
+        console.error("Falha ao preparar canvas!");
+        return;
+    }
+    
     // Se já tivermos o player local criado no estado, atualiza o nome
     if (myId && gameState.players && gameState.players[myId]) {
         gameState.players[myId].name = username;
     }
+    
+    console.log("Canvas pronto, iniciando gameLoop...");
+    // Inicia o loop do jogo
+    gameLoop();
 }
 
 socket.on('gameStateUpdate', (serverState) => {
@@ -709,6 +739,9 @@ canvas.addEventListener('wheel', function(event) {
 });
 
 function draw() {
+    // Garante que canvas e context estão prontos
+    if (!ensureCanvas()) return;
+    
     if (!myId || !gameState.players || !gameState.players[myId]) {
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -2261,6 +2294,9 @@ function getZombieAbilitiesTabRect() {
 }
 
 function gameLoop() {
+    // Garante que canvas existe
+    if (!ensureCanvas()) return;
+    
     if (myId && gameState.players[myId]) {
         const me = gameState.players[myId];
         const rot = getPlayerAngle(me);
@@ -2284,6 +2320,3 @@ function gameLoop() {
 
 // gameLoop();
 
-function startGame() {
-    gameLoop();
-}
