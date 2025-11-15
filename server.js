@@ -1,24 +1,42 @@
+console.log('[TRACE] server.js starting - 1');
 const express = require('express');
+console.log('[TRACE] 2 - express loaded');
 const http = require('http');
+console.log('[TRACE] 3 - http loaded');
 const { Server } = require("socket.io");
+console.log('[TRACE] 4 - socket.io loaded');
 const Matter = require('matter-js');
+console.log('[TRACE] 5 - matter-js loaded');
 const fs = require('fs-extra');
+console.log('[TRACE] 6 - fs-extra loaded');
 const crypto = require('crypto');
+console.log('[TRACE] 7 - crypto loaded');
 const path = require('path');
+console.log('[TRACE] 8 - path loaded');
 
 const app = express();
+console.log('[TRACE] 9 - express app created');
 const server = http.createServer(app);
+console.log('[TRACE] 10 - http server created');
 const io = new Server(server);
+console.log('[TRACE] 11 - socket.io server created');
+
+console.log('[TRACE] 11 - socket.io server created');
 
 process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err && err.stack ? err.stack : err);
+    console.error('[FATAL] Uncaught Exception:', err && err.stack ? err.stack : String(err));
     process.exit(1);
 });
-process.on('unhandledRejection', (reason, p) => {
-    console.error('Unhandled Rejection at:', p, 'reason:', reason && reason.stack ? reason.stack : reason);
+process.on('unhandledRejection', (reason) => {
+    console.error('[FATAL] Unhandled Rejection:', reason && reason.stack ? reason.stack : String(reason));
 });
 
+console.log('[TRACE] 12 - error handlers registered');
+
 const commands = require('./commands');
+console.log('[TRACE] 13 - commands module loaded');
+console.log("[TRACE] 14 - after commands require")
+
 
 const MAX_MESSAGE = 1000;
 let chatMessages = [];
@@ -111,71 +129,6 @@ function saveMessages() {
         spaces: 2
     });
     // Casa 1
-    if (s === gameState.house) {
-        const originalHouseWalls = [
-            { x: s.x, y: s.y, width: s.width, height: wt },
-            { x: s.x, y: s.y + s.height - wt - 200, width: s.width - 1300, height: wt },
-            { x: s.x, y: s.y, width: wt, height: 820 },
-            { x: s.x, y: s.y + 1020, width: wt, height: s.height - 1220 },
-            { x: s.x + s.width - wt, y: s.y, width: wt, height: 250 },
-            { x: s.x + s.width - wt, y: s.y + 650, width: wt, height: (s.height - 770) - 650 },
-            { x: s.x + 900, y: s.y, width: wt, height: 470 },
-            { x: s.x + 600, y: s.y + 1020, width: wt, height: 450 },
-            { x: s.x + 1500, y: s.y, width: wt, height: 300 },
-            { x: s.x + 1338, y: s.y + 1030, width: wt, height: 440 },
-            { x: s.x + 2200, y: s.y, width: wt, height: 470 },
-            { x: s.x + 2195, y: s.y + 750, width: wt, height: 150 },
-            { x: s.x, y: s.y + 400, width: 700, height: wt },
-            { x: s.x + 1800, y: s.y + 400, width: 270, height: wt },
-            { x: s.x + 250, y: s.y + 1020, width: 850, height: wt },
-            { x: s.x + 1150, y: s.y + 400, width: 720, height: wt },
-            { x: s.x + 1800, y: s.y, width: wt, height: 400 + wt },
-            { x: s.x, y: s.y + 750, width: 550, height: wt },
-            { x: s.x + 1330, y: s.y + 830, width: 533, height: wt },
-            { x: s.x + 2000, y: s.y + 830, width: 697, height: wt },
-            { x: s.x + 480, y: s.y + 620, width: wt, height: 200 }
-        ];
-        s.walls.push(...originalHouseWalls);
-
-        // mirrored (bottom) house walls
-        const mirroredHouseWalls = [
-            { x: s.x, y: WORLD_HEIGHT - s.y - wt, width: s.width, height: wt },
-            { x: s.x, y: WORLD_HEIGHT - (s.y + s.height - wt - 200) - wt, width: s.width - 1300, height: wt },
-            { x: s.x, y: WORLD_HEIGHT - s.y - 820, width: wt, height: 820 },
-            { x: s.x, y: WORLD_HEIGHT - (s.y + 1020) - (s.height - 1220), width: wt, height: s.height - 1220 },
-            { x: s.x + s.width - wt, y: WORLD_HEIGHT - s.y - 250, width: wt, height: 250 },
-            { x: s.x + s.width - wt, y: WORLD_HEIGHT - (s.y + 650) - ((s.height - 770) - 650), width: wt, height: (s.height - 770) - 650 },
-            { x: s.x + 900, y: WORLD_HEIGHT - s.y - 470, width: wt, height: 470 },
-            { x: s.x + 1500, y: WORLD_HEIGHT - s.y - 300, width: wt, height: 300 },
-            { x: s.x + 1338, y: WORLD_HEIGHT - (s.y + 1030) - 440, width: wt, height: 440 },
-            { x: s.x + 2200, y: WORLD_HEIGHT - s.y - 470, width: wt, height: 470 },
-            { x: s.x + 2195, y: WORLD_HEIGHT - (s.y + 750) - 150, width: wt, height: 150 },
-            { x: s.x, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 700, height: wt },
-            { x: s.x + 1800, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 270, height: wt },
-            { x: s.x + 250, y: WORLD_HEIGHT - (s.y + 1020) - wt, width: 850, height: wt },
-            { x: s.x + 1150, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 300, height: wt },
-            { x: s.x + 1570, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 300, height: wt },
-            { x: s.x + 1800, y: WORLD_HEIGHT - s.y - (400 + wt), width: wt, height: 400 + wt },
-            { x: s.x, y: WORLD_HEIGHT - (s.y + 750) - wt, width: 550, height: wt },
-            { x: s.x + 1330, y: WORLD_HEIGHT - (s.y + 830) - wt, width: 533, height: wt },
-            { x: s.x + 2000, y: WORLD_HEIGHT - (s.y + 830) - wt, width: 697, height: wt },
-            { x: s.x + 480, y: WORLD_HEIGHT - (s.y + 620) - 200, width: wt, height: 200 }
-        ];
-        s.walls.push(...mirroredHouseWalls);
-    } else if (s === gameState.house2) {
-        // house2 (nova casa posicionada acima)
-        const wt2 = s.wallThickness;
-        const house2Walls = [
-            { x: s.x, y: s.y, width: s.width, height: wt2 }, // Topo
-            { x: s.x, y: s.y + s.height - wt2, width: s.width, height: wt2 }, // Base
-            { x: s.x, y: s.y, width: wt2, height: s.height }, // Esquerda
-            { x: s.x + s.width - wt2, y: s.y, width: wt2, height: s.height }, // Direita
-            { x: s.x + 400, y: s.y + 200, width: wt2, height: s.height - 400 },
-            { x: s.x + 1200, y: s.y + 100, width: wt2, height: s.height - 200 },
-            { x: s.x + 800, y: s.y + 600, width: s.width - 1000, height: wt2 }
-        ];
-        s.walls.push(...house2Walls);
-    } else if (s === gameState.garage) {
 const PLAYER_ACCELERATION = 1.2;
 const PLAYER_FRICTION = 0.90;
 const ZOMBIE_SPEED_BOOST = 1.50;
@@ -183,7 +136,6 @@ const ZOMBIE_PUSH_MODIFIER = 2;
 const ZOMBIE_MIN_SPEED = 3;
 const SPRINT_DURATION = 10000;
 const SPRINT_COOLDOWN = 30000;
-const SPY_DURATION = 15000;
 const SPY_COOLDOWN = 30000;
 const BUTTERFLY_DURATION = 5000;
 const BUTTERFLY_SPEED = 4;
@@ -1775,7 +1727,8 @@ function setupCollisionEvents() {
 }
 
 io.on('connection', (socket) => {
-    console.log(`[SERVIDOR] Conexão recebida. ID do Socket: ${socket.id}`);
+    console.log('[TRACE] io.on connection start - socket id:', socket.id);
+    console.log(`[SERVIDOR] Conexão recebida. ID do Socket: ${socket.id}`);
 
     createNewPlayer(socket);
 
@@ -2704,9 +2657,10 @@ socket.on('sendMessage', (messageText) => {
     io.emit('newMessage', message);
 });
 
-    socket.on('disconnect', () => {
-        console.log('Player disconnected:', socket.id);
-        if (socket.username) delete sockets[socket.username];
+    socket.on('disconnect', () => {
+        console.log('[TRACE] socket.on disconnect - socket id:', socket.id);
+        console.log('Player disconnected:', socket.id);
+        if (socket.username) delete sockets[socket.username];
         const player = gameState.players[socket.id];
         if (player) {
             const playerBody = world.bodies.find(b => b.playerId === socket.id);
@@ -2981,32 +2935,45 @@ const preferredPort = Number(process.env.PORT) || 3000;
 const fallbackPort = preferredPort === 3000 ? 3001 : preferredPort + 1;
 
 function startOnPort(port) {
-    server.listen(port, () => {
-        initializeGame();
-        console.log(`🚀 Game server running at http://localhost:${port}`);
-    });
-    server.on('error', (err) => {
-        if (err.code === 'EADDRINUSE') {
-            if (port === preferredPort) {
-                console.warn(`Port ${port} in use, retrying on ${fallbackPort}...`);
-                startOnPort(fallbackPort);
-            } else {
-                console.error(`Port ${port} also in use. Aborting.`);
+    console.log(`[INFO] Starting server on port ${port}...`);
+    try {
+        server.listen(port, () => {
+            console.log(`[INFO] Server listening on port ${port}, initializing game...`);
+            try {
+                initializeGame();
+                console.log(`[SUCCESS] Game initialized successfully`);
+                console.log(`🚀 Game server running at http://localhost:${port}`);
+            } catch (gameErr) {
+                console.error('[ERROR] initializeGame() failed:', gameErr && gameErr.stack ? gameErr.stack : String(gameErr));
                 process.exit(1);
             }
-        } else {
-            console.error('Server error:', err);
-            process.exit(1);
-        }
-    });
+        });
+        server.on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                if (port === preferredPort) {
+                    console.warn(`[WARN] Port ${port} in use, retrying on ${fallbackPort}...`);
+                    startOnPort(fallbackPort);
+                } else {
+                    console.error(`[ERROR] Port ${port} also in use. Aborting.`);
+                    process.exit(1);
+                }
+            } else {
+                console.error('[ERROR] Server error:', err);
+                process.exit(1);
+            }
+        });
+    } catch (err) {
+        console.error('[FATAL] server.listen() threw:', err && err.stack ? err.stack : String(err));
+        process.exit(1);
+    }
 }
 
+console.log('[INFO] Server module loaded, starting server...');
 startOnPort(preferredPort);
-
-}
-}
 
 // extra safety closers (balance unclosed blocks if any)
 try {
     // noop
 } catch(e) {}
+
+}
