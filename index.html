@@ -1,24 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Infestation</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <canvas id="gameCanvas" tabindex="0"></canvas>
-    <input type="text" id="chatInput" placeholder="Pressione Enter para conversar..." autocomplete="off">
-    
-    <div id="menu-ui">
-    
-        <div id="menu-ui-container">
-            <div id="instructions-panel" class="menu-panel">
-                <h2>Instructions</h2>
-                <ul>
-                    <li><span class="key">WASD / Arrow</span> - Movement keys</li>
-                    <li><span class="key">G</span> - Drop item</li>
                     <li><span class="key">E</span> - Pick up item</li>
+    <!-- Script Mobile ANTES dos scripts do jogo -->
+    <script src="game-mobile.js"></script>
                     <li><span class="key">B</span> - Buy items as a human</li>
                     <li><span class="key">Z</span> - Teleport to Spawn as a zombie</li>
                     <li><span class="key">Mouse Left Click</span> - Use item / Attack</li>
@@ -109,15 +94,43 @@
       socket.on && socket.on('devMode', (flag) => {
         window.isDevClient = !!flag;
       });
-
-      document.addEventListener('keydown', (e) => {
-        if (window.isDevClient) return; // dev liberado
-        // F12 or Ctrl+Shift+I / Cmd+Opt+I
-        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i') || (e.metaKey && e.altKey && e.key.toLowerCase() === 'i')) {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-        }
-        // also block Ctrl+Shift+C / Ctrl+Shift+J
+      <script src="game-mobile.js"></script>
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+          <title>Infestation</title>
+    
+          <!-- Detectar Mobile e carregar CSS apropriado -->
+          <script>
+            const isMobileDevice = () => {
+              return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                     (window.innerWidth < 768 && window.matchMedia('(hover: none) and (pointer: coarse)').matches);
+            };
+            window.IS_MOBILE = isMobileDevice();
+            document.documentElement.setAttribute('data-device', window.IS_MOBILE ? 'mobile' : 'desktop');
+          </script>
+    
+          <link rel="stylesheet" href="style.css">
+          <link rel="stylesheet" href="style-mobile.css" media="screen and (max-width: 768px) and (hover: none)">
+      </head>
+      <script>
+          <!-- Detectar Mobile e carregar CSS apropriado -->
+          <script>
+            // Detectar device mobile antes de carregar CSS
+            const isMobileDevice = () => {
+              return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                     (window.innerWidth < 768 && window.matchMedia('(hover: none) and (pointer: coarse)').matches);
+            };
+            window.IS_MOBILE = isMobileDevice();
+            document.documentElement.setAttribute('data-device', window.IS_MOBILE ? 'mobile' : 'desktop');
+          </script>
+    
+          <!-- CSS: Desktop ou Mobile (ambos carregam, mas media queries decidem qual exibe) -->
+          <link rel="stylesheet" href="style.css">
+          <link rel="stylesheet" href="style-mobile.css" media="screen and (max-width: 768px) and (hover: none)">
+      </head>
         if ((e.ctrlKey && e.shiftKey && (e.key.toLowerCase() === 'c' || e.key.toLowerCase() === 'j'))) {
           e.preventDefault();
           e.stopImmediatePropagation();

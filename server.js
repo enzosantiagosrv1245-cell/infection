@@ -2967,15 +2967,14 @@ function startNewRound() {
         gameState.runningTennis.y = spawnY;
     }
 }
-
 // Tenta iniciar o servidor na porta desejada e, em caso de EADDRINUSE, tenta uma porta alternativa
 const preferredPort = Number(process.env.PORT) || 3000;
 const fallbackPort = preferredPort === 3000 ? 3001 : preferredPort + 1;
 
 function startOnPort(port) {
-    server.listen(port, () => {
+    server.listen(port, '0.0.0.0', () => {
         initializeGame();
-        console.log(`🚀 Game server running at http://localhost:${port}`);
+        console.log(`🚀 Game server running on port ${port}`);
     });
     server.on('error', (err) => {
         if (err.code === 'EADDRINUSE') {
@@ -2994,11 +2993,3 @@ function startOnPort(port) {
 }
 
 startOnPort(preferredPort);
-
-// extra safety closers (balance unclosed blocks if any)
-try {
-    // noop
-} catch(e) {}
-
-}
-}
