@@ -219,39 +219,41 @@ document.addEventListener("DOMContentLoaded", () => {
     // =================================================================
 
 
-    // --- Login / Registro ---
-    const loginBtn = document.getElementById("loginBtn");
-    const loginModal = document.getElementById("loginModal");
-    const closeModalBtn = document.getElementById("closeModalBtn");
-    const registerBtn = document.getElementById("registerBtn");
-    const loginSubmitBtn = document.getElementById("loginSubmitBtn");
-    const usernameInput = document.getElementById("username");
-    const passwordInput = document.getElementById("password");
+    // --- Login / Registro ---
+    const loginBtn = document.getElementById("loginBtn");
+    const loginModal = document.getElementById("loginModal");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+    const registerBtn = document.getElementById("registerBtn");
+    const loginSubmitBtn = document.getElementById("loginSubmitBtn");
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
 
-    loginBtn.addEventListener("click", () => loginModal.classList.remove("hidden"));
-    closeModalBtn.addEventListener("click", () => loginModal.classList.add("hidden"));
+    if (loginBtn) loginBtn.addEventListener("click", () => {
+        if (loginModal) loginModal.classList.remove("hidden");
+    });
+    if (closeModalBtn) closeModalBtn.addEventListener("click", () => {
+        if (loginModal) loginModal.classList.add("hidden");
+    });
 
-    registerBtn.addEventListener("click", () => {
-        const user = usernameInput.value.trim();
-        const pass = passwordInput.value.trim();
-        if (!user || !pass) return showNotification("⚠️ Preencha todos os campos!", "red");
-        socket.emit("register", {
-            username: user,
-            password: pass
-        });
-    });
+    if (registerBtn) registerBtn.addEventListener("click", () => {
+        const user = usernameInput.value.trim();
+        const pass = passwordInput.value.trim();
+        if (!user || !pass) return showNotification("⚠️ Preencha todos os campos!", "red");
+        socket.emit("register", {
+            username: user,
+            password: pass
+        });
+    });
 
-    loginSubmitBtn.addEventListener("click", () => {
-        const user = usernameInput.value.trim();
-        const pass = passwordInput.value.trim();
-        if (!user || !pass) return showNotification("⚠️ Preencha todos os campos!", "red");
-        socket.emit("login", {
-            username: user,
-            password: pass
-        });
-    });
-
-    socket.on("registerSuccess", () => showNotification("✅ Conta criada!", "green"));
+    if (loginSubmitBtn) loginSubmitBtn.addEventListener("click", () => {
+        const user = usernameInput.value.trim();
+        const pass = passwordInput.value.trim();
+        if (!user || !pass) return showNotification("⚠️ Preencha todos os campos!", "red");
+        socket.emit("login", {
+            username: user,
+            password: pass
+        });
+    });    socket.on("registerSuccess", () => showNotification("✅ Conta criada!", "green"));
     socket.on("registerError", msg => showNotification("❌ " + msg, "red"));
 
     // =================================================================
@@ -275,45 +277,47 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- FIM DA LÓGICA DE LOGIN MODIFICADA ---
     // =================================================================
 
-    // =================================================================
-    // --- NOVA LÓGICA PARA INICIAR O JOGO ---
-    // =================================================================
-    playGameBtn.addEventListener('click', () => {
-        if (!currentUser) {
-            showNotification("⚠️ Você precisa fazer login para jogar!", "red");
-            return;
-        }
+    // --- NOVA LÓGICA PARA INICIAR O JOGO ---
+    // =================================================================
+    if (playGameBtn) {
+        playGameBtn.addEventListener('click', () => {
+            if (!currentUser) {
+                showNotification("⚠️ Você precisa fazer login para jogar!", "red");
+                return;
+            }
 
-        // Esconde TODA a interface do menu
-        const menuUI = document.getElementById('menu-ui');
-        if (menuUI) menuUI.style.display = 'none';
+            // Esconde o painel do menu principal
+            const mainMenuPanel = document.getElementById('main-menu-panel');
+            if (mainMenuPanel) mainMenuPanel.style.display = 'none';
 
-        // Esconde o ícone de perfil do menu
-        if (menuProfileIcon) menuProfileIcon.style.display = 'none';
+            // Esconde o ícone de perfil do menu
+            if (menuProfileIcon) menuProfileIcon.style.display = 'none';
 
-        // Limpa o canvas para remover qualquer resquício do menu
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Esconde o container ui-root
+            const uiRoot = document.getElementById('ui-root');
+            if (uiRoot) uiRoot.style.display = 'none';
 
-        // REMOVIDO: A criação do perfil do jogo foi removida para atender ao pedido 3.
-        // createProfileUI(); 
-        updateFriendsUI();
-        renderChatFriends();
+            // Cria canvas para o jogo se não existir
+            let canvas = document.getElementById('gameCanvas');
+            if (!canvas) {
+                canvas = document.createElement('canvas');
+                canvas.id = 'gameCanvas';
+                document.body.appendChild(canvas);
+            }
+            canvas.style.display = 'block';
 
-        // Chama a função para iniciar o seu jogo!
-        if (typeof startGame === 'function') {
-            console.log("Chamando a função startGame() de game.js...");
-            startGame(currentUser);
-        } else {
-            console.error("ERRO: A função startGame() não foi encontrada.");
-        }
-    });
-    // =================================================================
-    // --- FIM DA NOVA LÓGICA ---
-    // =================================================================
+            updateFriendsUI();
+            renderChatFriends();
 
-    socket.on("loginError", msg => showNotification("❌ " + msg, "red"));
+            // Chama a função para iniciar o seu jogo!
+            if (typeof startGame === 'function') {
+                console.log("Chamando a função startGame() de game.js...");
+                startGame(currentUser);
+            } else {
+                console.error("ERRO: A função startGame() não foi encontrada.");
+            }
+        });
+    }    socket.on("loginError", msg => showNotification("❌ " + msg, "red"));
 
     // --- Perfil do JOGO ---
     const profileContainer = document.getElementById("profileBallContainer");

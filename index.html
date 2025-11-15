@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <canvas id="gameCanvas" style="display:none;"></canvas>
+  
   <div id="ui-root">
     <div id="main-menu-panel" class="menu-panel">
       <h1>Infestation</h1>
@@ -72,7 +74,7 @@
       </div>
     </div>
   </div>
-  <!-- socket.io client -->
+  
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
