@@ -48,72 +48,7 @@ const sockets = {};
 // Nota: A lógica de conexão principal é definida mais abaixo (única handler).
 // Aqui apenas inicializamos o mapa de sockets para uso nas rotas de amizade/login.
 
-    // Ações do editor
-    socket.on('editorAction', (data) => {
-        switch (data.type) {
-            case 'add':
-                gameState.objects.push(data.object);
-                break;
-            case 'move':
-                const obj = gameState.objects.find(o => o.uniqueId === data.objectId);
-                if (obj) { obj.x = data.x; obj.y = data.y; }
-                break;
-            case 'rotate':
-                const rotObj = gameState.objects.find(o => o.uniqueId === data.objectId);
-                if (rotObj) rotObj.rotation = data.rotation;
-                break;
-            case 'delete':
-                gameState.objects = gameState.objects.filter(o => o.uniqueId !== data.objectId);
-                break;
-            case 'addGems':
-                const gemPlayer = gameState.players[data.playerId];
-                if (gemPlayer) gemPlayer.gems += data.amount;
-                break;
-            case 'heal':
-                const healPlayer = gameState.players[data.playerId];
-                if (healPlayer) healPlayer.role = 'human';
-                break;
-            case 'kill':
-                const killPlayer = gameState.players[data.playerId];
-                if (killPlayer) killPlayer.role = 'zombie';
-                break;
-            case 'clearMap':
-                gameState.objects = [];
-                break;
-            case 'restart':
-
-                // Aqui reinicia o estado do jogo sem redeclarar
-                gameState = {
-                    players: {},
-                    objects: [],
-                    timeLeft: 120,
-                    startTime: 60,
-                    gamePhase: 'waiting'
-                };
-                break;
-        }
-
-        });
-
-        io.emit('gameStateUpdate', gameState);
- 
-app.use(express.static(__dirname));
-app.use(express.json());
-
-        // Mantém limite de mensagens
-        if (chatMessages.length > MAX_MESSAGE) {
-            chatMessages.shift();
-        }
-
-        io.emit('chatMessage', chatMessages);
-
-    io.emit('gameStateUpdate', gameState);
-
-
 const PORT = process.env.PORT || 3000;
-
-app.use(express.static(__dirname));
-app.use(express.json());
 
 
 if (fs.existsSync(USERS_FILE)) users = fs.readJsonSync(USERS_FILE);
@@ -1901,6 +1836,58 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Editor actions (per-connection)
+    socket.on('editorAction', (data) => {
+        switch (data.type) {
+            case 'add':
+                gameState.objects.push(data.object);
+                break;
+            case 'move': {
+                const obj = gameState.objects.find(o => o.uniqueId === data.objectId);
+                if (obj) { obj.x = data.x; obj.y = data.y; }
+                break;
+            }
+            case 'rotate': {
+                const rotObj = gameState.objects.find(o => o.uniqueId === data.objectId);
+                if (rotObj) rotObj.rotation = data.rotation;
+                break;
+            }
+            case 'delete':
+                gameState.objects = gameState.objects.filter(o => o.uniqueId !== data.objectId);
+                break;
+            case 'addGems': {
+                const gemPlayer = gameState.players[data.playerId];
+                if (gemPlayer) gemPlayer.gems += data.amount;
+                break;
+            }
+            case 'heal': {
+                const healPlayer = gameState.players[data.playerId];
+                if (healPlayer) healPlayer.role = 'human';
+                break;
+            }
+            case 'kill': {
+                const killPlayer = gameState.players[data.playerId];
+                if (killPlayer) killPlayer.role = 'zombie';
+                break;
+            }
+            case 'clearMap':
+                gameState.objects = [];
+                break;
+            case 'restart':
+                gameState = {
+                    players: {},
+                    objects: [],
+                    timeLeft: 120,
+                    startTime: 60,
+                    gamePhase: 'waiting'
+                };
+                initializeGame();
+                break;
+        }
+
+        io.emit('gameStateUpdate', gameState);
+    });
+
     socket.on('chooseFunction', (func) => {
         const player = gameState.players[socket.id];
         const cost = FUNCTION_COSTS[func];
@@ -2514,7 +2501,7 @@ socket.on('sendMessage', (messageText) => {
     };
     
     chatMessages.push(message);
-    if (chatMessages.length > MAX_MESSAGES) {
+    if (chatMessages.length > MAX_MESSAGE) {
         chatMessages.shift();
     }
     
