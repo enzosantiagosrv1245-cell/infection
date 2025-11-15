@@ -1,11 +1,11 @@
 
 // Versão limpa e mínima do server.js
-import express from 'express';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
-import { existsSync, readJsonSync, writeJsonSync } from 'fs-extra';
-import { randomBytes, scryptSync } from 'crypto';
-import { join } from 'path';
+const express = require('express');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
+const fs = require('fs-extra');
+const crypto = require('crypto');
+const path = require('path');
 
 const app = express();
 const server = createServer(app);
@@ -13,12 +13,12 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
-const USERS_FILE = join(__dirname, 'users.json');
+const USERS_FILE = path.join(__dirname, 'users.json');
 
 // carregar users ou iniciar vazio
 let users = {};
 try {
-    if (existsSync(USERS_FILE)) users = readJsonSync(USERS_FILE);
+    if (fs.existsSync(USERS_FILE)) users = fs.readJsonSync(USERS_FILE);
 } catch (err) {
     console.error('Erro ao ler users.json:', err);
     users = {};
@@ -26,15 +26,15 @@ try {
 
 function saveUsers() {
     try {
-        writeJsonSync(USERS_FILE, users, { spaces: 2 });
+        fs.writeJsonSync(USERS_FILE, users, { spaces: 2 });
     } catch (err) {
         console.error('Erro ao salvar users.json:', err);
     }
 }
 
 function hashPassword(password) {
-    const salt = randomBytes(16).toString('hex');
-    const derived = scryptSync(password, salt, 64);
+    const salt = crypto.randomBytes(16).toString('hex');
+    const derived = crypto.scryptSync(password, salt, 64);
     return { salt, passwordHash: derived.toString('hex') };
 }
 
@@ -43,7 +43,7 @@ function verifyPassword(userObj, password) {
     // compat com campo antigo 'password' em texto
     if (userObj.password) return userObj.password === password;
     if (userObj.passwordHash && userObj.salt) {
-        const derived = scryptSync(password, userObj.salt, 64).toString('hex');
+        const derived = crypto.scryptSync(password, userObj.salt, 64).toString('hex');
         return derived === userObj.passwordHash;
     }
     return false;

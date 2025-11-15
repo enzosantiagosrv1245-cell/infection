@@ -6,8 +6,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const playGameBtn = document.getElementById('playGameBtn');
     const playerNameDisplay = document.getElementById('playerName');
 
-    // --- Não precisamos mais da animação de fundo do menu ---
-    // A função drawCanvas() foi removida.
+	// --- Não precisamos mais da animação de fundo do menu ---
+	// A função drawCanvas() foi removida.
+	// --- REMOVIDO: Lógica mobile, joystick, botões touch, detecção de device ---
+	// --- REMOVIDO: Lógica mobile, joystick, botões touch, detecção de device ---
 
     let currentUser = null;
     let userProfile = null;
