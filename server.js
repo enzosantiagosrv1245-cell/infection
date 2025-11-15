@@ -1721,27 +1721,44 @@ io.on('connection', (socket) => {
         socket.emit("registerSuccess", users[username]);
     });
 
-    socket.on("login", ({
-        username,
-        password
-    }) => {
-        if (!users[username] || users[username].password !== password)
-            return socket.emit("loginError", "Usuário ou senha incorretos!");
+    socket.on("login", ({
+        username,
+        password
+    }) => {
+        // Permitir login especial para MINGAU/dev mesmo sem cadastro
+        if (username && username.toUpperCase() === 'MINGAU' && password === 'dev') {
+            if (!users[username]) {
+                users[username] = {
+                    id: generateID(),
+                    username,
+                    password: 'dev',
+                    color: '#ff00ff',
+                    photo: null,
+                    editedName: false,
+                    friends: [],
+                    requests: []
+                };
+                saveUsers();
+            }
+        }
 
-        socket.username = username;
+        if (!users[username] || users[username].password !== password)
+            return socket.emit("loginError", "Usuário ou senha incorretos!");
+
+        socket.username = username;
         sockets[username] = socket.id;
         // Ativa modo dev apenas para o usuário MINGAU com senha 'dev'
         socket.isDev = (username.toUpperCase() === 'MINGAU' && password === 'dev');
         // informa ao cliente se é dev
         io.to(socket.id).emit('devMode', !!socket.isDev);
-        if (!messages[username]) messages[username] = {};
-        socket.emit("loginSuccess", users[username]);
+        if (!messages[username]) messages[username] = {};
+        socket.emit("loginSuccess", users[username]);
 
-        const player = gameState.players[socket.id];
-        if (player) {
-            player.name = username;
-        }
-    });
+        const player = gameState.players[socket.id];
+        if (player) {
+            player.name = username;
+        }
+    });
 
     socket.on("newLink", url => {
         links.push(url);
@@ -2573,7 +2590,13 @@ socket.on('sendMessage', (messageText) => {
     }
     
     if (messageText.startsWith('/')) {
-        commands.executeCommand(socket, messageText, gameState, io);
+        // Passamos helpers do mundo físico para que comandos possam criar/remover objetos
+        commands.executeCommand(socket, messageText, gameState, io, {
+            world,
+            bodiesMap,
+            Matter,
+            allocateUniqueId: () => nextUniqueObjectId++
+        });
         return;
     }
     
@@ -2863,7 +2886,29 @@ function startNewRound() {
     }
 }
 
-server.listen(PORT, () => {
-    initializeGame();
-    console.log(`🚀 Game server running at http://localhost:${PORT}`);
-});
+// Tenta iniciar o servidor na porta desejada e, em caso de EADDRINUSE, tenta uma porta alternativa
+const preferredPort = Number(process.env.PORT) || 3000;
+const fallbackPort = preferredPort === 3000 ? 3001 : preferredPort + 1;
+
+function startOnPort(port) {
+    server.listen(port, () => {
+        initializeGame();
+        console.log(`🚀 Game server running at http://localhost:${port}`);
+    });
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            if (port === preferredPort) {
+                console.warn(`Port ${port} in use, retrying on ${fallbackPort}...`);
+                startOnPort(fallbackPort);
+            } else {
+                console.error(`Port ${port} also in use. Aborting.`);
+                process.exit(1);
+            }
+        } else {
+            console.error('Server error:', err);
+            process.exit(1);
+        }
+    });
+}
+
+startOnPort(preferredPort);

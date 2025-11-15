@@ -10,7 +10,7 @@ function hasAdminPermission(socket, player) {
     return false;
 }
 
-function executeCommand(socket, messageText, gameState, io) {
+function executeCommand(socket, messageText, gameState, io, helpers = {}) {
     const parts = messageText.split(' ');
     const command = parts[0].toLowerCase();
     const args = parts.slice(1);
@@ -106,6 +106,131 @@ function executeCommand(socket, messageText, gameState, io) {
                 color: '#FFD700'
             });
             break;
+
+        case '/addobject': {
+            // /addobject <type> [x] [y] [width] [height] [rotation] [isStatic]
+            if (args.length < 1) {
+                socket.emit('serverMessage', { text: 'Uso: /addobject <type> [x] [y] [width] [height] [rotation] [isStatic]', color: '#FF6B6B' });
+                return;
+            }
+            const type = args[0];
+            const player = gameState.players[socket.id];
+            if (!player) return;
+
+            let x = player.x + 50;
+            let y = player.y + 50;
+            if (args.length >= 3) {
+                const nx = Number(args[1]);
+                const ny = Number(args[2]);
+                if (!isNaN(nx) && !isNaN(ny)) {
+                    x = nx;
+                    y = ny;
+                }
+            }
+
+            const width = args.length >= 4 ? Number(args[3]) || 80 : 80;
+            const height = args.length >= 5 ? Number(args[4]) || 80 : 80;
+            const rotation = args.length >= 6 ? Number(args[5]) || 0 : 0;
+            const isStatic = args.length >= 7 ? (args[6] === 'true' || args[6] === '1') : false;
+
+            const uniqueId = (helpers.allocateUniqueId ? helpers.allocateUniqueId() : Date.now());
+            const obj = {
+                id: type,
+                x,
+                y,
+                width,
+                height,
+                rotation,
+                isStatic,
+                uniqueId,
+                vx: 0,
+                vy: 0,
+                angularVelocity: 0,
+                draggedBy: null,
+                draggedUntil: null
+            };
+
+            gameState.objects.push(obj);
+
+            try {
+                if (helpers && helpers.Matter && helpers.world && helpers.bodiesMap) {
+                    const body = helpers.Matter.Bodies.rectangle(obj.x + obj.width / 2, obj.y + obj.height / 2, obj.width, obj.height, {
+                        isStatic: !!obj.isStatic,
+                        angle: (obj.rotation || 0),
+                        friction: 0.000002,
+                        frictionAir: 0.07,
+                        restitution: 0.5,
+                        density: 0.0005,
+                        label: obj.isStatic ? 'wall' : 'furniture',
+                        collisionFilter: {
+                            category: obj.isStatic ? 0x0004 : 0x0008
+                        }
+                    });
+                    body.uniqueId = uniqueId;
+                    body.gameId = obj.id;
+                    helpers.bodiesMap[uniqueId] = body;
+                    helpers.Matter.World.add(helpers.world, body);
+                }
+            } catch (e) {
+                console.error('Erro ao criar corpo no /addobject', e);
+            }
+
+            io.emit('gameStateUpdate', gameState);
+            io.emit('serverMessage', { text: `${player.name} adicionou objeto ${type} (id:${uniqueId})`, color: '#90EE90' });
+            break;
+        }
+
+        case '/removeobject': {
+            // /removeobject <uniqueId|gameId>
+            if (args.length < 1) {
+                socket.emit('serverMessage', { text: 'Uso: /removeobject <uniqueId|gameId>', color: '#FF6B6B' });
+                return;
+            }
+            const key = args[0];
+            let removed = false;
+
+            // Tenta por uniqueId (número)
+            const asNum = Number(key);
+            if (!isNaN(asNum)) {
+                const obj = gameState.objects.find(o => o.uniqueId === asNum);
+                if (obj) {
+                    // remove físico
+                    if (helpers && helpers.bodiesMap && helpers.Matter && helpers.world) {
+                        const body = helpers.bodiesMap[obj.uniqueId];
+                        if (body) {
+                            helpers.Matter.World.remove(helpers.world, body);
+                            delete helpers.bodiesMap[obj.uniqueId];
+                        }
+                    }
+                    gameState.objects = gameState.objects.filter(o => o.uniqueId !== asNum);
+                    removed = true;
+                }
+            }
+
+            if (!removed) {
+                // tenta por gameId
+                const obj = gameState.objects.find(o => o.id === key);
+                if (obj) {
+                    if (helpers && helpers.bodiesMap && helpers.Matter && helpers.world) {
+                        const body = helpers.bodiesMap[obj.uniqueId];
+                        if (body) {
+                            helpers.Matter.World.remove(helpers.world, body);
+                            delete helpers.bodiesMap[obj.uniqueId];
+                        }
+                    }
+                    gameState.objects = gameState.objects.filter(o => o !== obj);
+                    removed = true;
+                }
+            }
+
+            if (removed) {
+                io.emit('gameStateUpdate', gameState);
+                io.emit('serverMessage', { text: `Objeto ${key} removido por ${gameState.players[socket.id].name}`, color: '#FFA500' });
+            } else {
+                socket.emit('serverMessage', { text: `Objeto ${key} não encontrado.`, color: '#FF6B6B' });
+            }
+            break;
+        }
 
         case '/godmode': {
             // /godmode on|off
