@@ -1,7 +1,7 @@
-// Versão limpa e mínima do server.js
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
+const { Server } = require("socket.io");
+const Matter = require('matter-js');
 const fs = require('fs-extra');
 const crypto = require('crypto');
 const path = require('path');
@@ -10,36 +10,41 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const PORT = process.env.PORT || 3000;
+const commands = require('./commands');
 
-const USERS_FILE = path.join(__dirname, 'users.json');
+const MAX_MESSAGE = 1000;
+let chatMessages = [];
 
-// carregar users ou iniciar vazio
-let users = {};
-try {
-    if (fs.existsSync(USERS_FILE)) users = fs.readJsonSync(USERS_FILE);
-} catch (err) {
-    console.error('Erro ao ler users.json:', err);
-    users = {};
-}
+let a = "abc"
 
-function saveUsers() {
-    try {
-        fs.writeJsonSync(USERS_FILE, users, { spaces: 2 });
-    } catch (err) {
-        console.error('Erro ao salvar users.json:', err);
-    }
-}
+// --- Estado do jogo ---
+let gameState = {
+    players: {},
+    objects: [],
+    timeLeft: 120,
+    startTime: 60,
+    gamePhase: 'waiting'
+};
 
+// --- Dados persistentes ---
+const USERS_FILE = path.join(__dirname, "users.json");
+const MESSAGES_FILE = path.join(__dirname, "messages.json");
+const LINKS_FILE = path.join(__dirname, "links.json");
+
+let users = fs.existsSync(USERS_FILE) ? fs.readJsonSync(USERS_FILE) : {};
+let messages = fs.existsSync(MESSAGES_FILE) ? fs.readJsonSync(MESSAGES_FILE) : {};
+let links = fs.existsSync(LINKS_FILE) ? fs.readJsonSync(LINKS_FILE) : [];
+
+// --- Segurança: hash de senhas ---
 function hashPassword(password) {
     const salt = crypto.randomBytes(16).toString('hex');
     const derived = crypto.scryptSync(password, salt, 64);
-    return { salt, passwordHash: derived.toString('hex') };
+    return { salt, hash: derived.toString('hex') };
 }
 
 function verifyPassword(userObj, password) {
     if (!userObj) return false;
-    // compat com campo antigo 'password' em texto
+    // compat com campo antigo 'password' (texto puro)
     if (userObj.password) return userObj.password === password;
     if (userObj.passwordHash && userObj.salt) {
         const derived = crypto.scryptSync(password, userObj.salt, 64).toString('hex');
@@ -48,16 +53,16 @@ function verifyPassword(userObj, password) {
     return false;
 }
 
-// Migrar senhas em texto, caso exista
+// Migra usuários com senha em texto para hash (segurança e "codificação")
 function migrateUsersToHashed() {
     let changed = false;
     for (const name in users) {
         const u = users[name];
         if (u && u.password && !u.passwordHash) {
-            const { salt, passwordHash } = hashPassword(u.password);
+            const { salt, hash } = hashPassword(u.password);
             u.salt = salt;
-            u.passwordHash = passwordHash;
-            delete u.password;
+            u.passwordHash = hash;
+            delete u.password; // remove plaintext
             changed = true;
         }
     }
@@ -66,117 +71,134 @@ function migrateUsersToHashed() {
 
 migrateUsersToHashed();
 
+function saveUsers() {
+    fs.writeJsonSync(USERS_FILE, users, { spaces: 2 });
+}
+
+// --- Middlewares ---
 app.use(express.static(__dirname));
 app.use(express.json());
 
-// sockets map: username -> socket
-const online = {};
+// --- Socket.io ---
+const sockets = {};
 
-io.on('connection', (socket) => {
-    console.log('socket connected', socket.id);
+// Nota: A lógica de conexão principal é definida mais abaixo (única handler).
+// Aqui apenas inicializamos o mapa de sockets para uso nas rotas de amizade/login.
 
-    // envia flag de devMode inicial false (cliente bloqueia atalhos se false)
-    socket.emit('devMode', false);
+const PORT = process.env.PORT || 3000;
 
-    socket.on('register', ({ username, password }) => {
-        if (!username || !password) return socket.emit('registerError', 'Campos inválidos');
-        if (users[username]) return socket.emit('registerError', 'Usuário já existe');
-        const { salt, passwordHash } = hashPassword(password);
-        users[username] = {
-            username,
-            salt,
-            passwordHash,
-            photo: '',
-            color: '#'+Math.floor(Math.random()*16777215).toString(16),
-            friends: [],
-            requests: []
-        };
-        saveUsers();
-        socket.emit('registerSuccess');
-        console.log('Usuário registrado:', username);
-    });
 
-    socket.on('login', ({ username, password }) => {
-        if (!username || !password) return socket.emit('loginError', 'Campos inválidos');
-        const u = users[username];
-        if (!u) return socket.emit('loginError', 'Usuário não existe');
-        if (!verifyPassword(u, password)) return socket.emit('loginError', 'Senha incorreta');
+if (fs.existsSync(USERS_FILE)) users = fs.readJsonSync(USERS_FILE);
+if (fs.existsSync(MESSAGES_FILE)) messages = fs.readJsonSync(MESSAGES_FILE);
+if (fs.existsSync(LINKS_FILE)) links = fs.readJsonSync(LINKS_FILE);
 
-        // marca online
-        online[username] = socket;
+function saveUsers() {
+    fs.writeJsonSync(USERS_FILE, users, {
+        spaces: 2
+    });
+}
 
-        // se for usuário dev especial, habilita devMode
-        if (username === 'MINGAU') socket.emit('devMode', true);
+function saveMessages() {
+    fs.writeJsonSync(MESSAGES_FILE, messages, {
+        spaces: 2
+    });
+    // Casa 1
+    if (s === gameState.house) {
+        const originalHouseWalls = [
+            { x: s.x, y: s.y, width: s.width, height: wt },
+            { x: s.x, y: s.y + s.height - wt - 200, width: s.width - 1300, height: wt },
+            { x: s.x, y: s.y, width: wt, height: 820 },
+            { x: s.x, y: s.y + 1020, width: wt, height: s.height - 1220 },
+            { x: s.x + s.width - wt, y: s.y, width: wt, height: 250 },
+            { x: s.x + s.width - wt, y: s.y + 650, width: wt, height: (s.height - 770) - 650 },
+            { x: s.x + 900, y: s.y, width: wt, height: 470 },
+            { x: s.x + 600, y: s.y + 1020, width: wt, height: 450 },
+            { x: s.x + 1500, y: s.y, width: wt, height: 300 },
+            { x: s.x + 1338, y: s.y + 1030, width: wt, height: 440 },
+            { x: s.x + 2200, y: s.y, width: wt, height: 470 },
+            { x: s.x + 2195, y: s.y + 750, width: wt, height: 150 },
+            { x: s.x, y: s.y + 400, width: 700, height: wt },
+            { x: s.x + 1800, y: s.y + 400, width: 270, height: wt },
+            { x: s.x + 250, y: s.y + 1020, width: 850, height: wt },
+            { x: s.x + 1150, y: s.y + 400, width: 720, height: wt },
+            { x: s.x + 1800, y: s.y, width: wt, height: 400 + wt },
+            { x: s.x, y: s.y + 750, width: 550, height: wt },
+            { x: s.x + 1330, y: s.y + 830, width: 533, height: wt },
+            { x: s.x + 2000, y: s.y + 830, width: 697, height: wt },
+            { x: s.x + 480, y: s.y + 620, width: wt, height: 200 }
+        ];
+        s.walls.push(...originalHouseWalls);
 
-        // envia perfil simplificado
-        const profile = {
-            username,
-            photo: u.photo || '',
-            color: u.color || '#cccccc',
-            friends: u.friends || [],
-            requests: u.requests || []
-        };
-        socket.emit('loginSuccess', profile);
-        console.log('Usuário logado:', username);
-    });
-
-    socket.on('checkUserExists', (target, cb) => {
-        try { cb(!!users[target]); } catch (e) { /* ignore */ }
-    });
-
-    socket.on('friendRequest', ({ from, to, photo }) => {
-        if (!users[to]) return socket.emit('friendRequestError', 'Usuário alvo não existe');
-        const target = users[to];
-        target.requests = target.requests || [];
-        if (!target.requests.includes(from)) target.requests.push(from);
-        saveUsers();
-        // notificar online
-        const sock = online[to];
-        if (sock) sock.emit('friendRequestNotification', { from, photo });
-    });
-
-    socket.on('acceptRequest', ({ from, to }) => {
-        if (!users[to] || !users[from]) return;
-        const A = users[to];
-        const B = users[from];
-        A.friends = A.friends || [];
-        B.friends = B.friends || [];
-        if (!A.friends.includes(from)) A.friends.push(from);
-        if (!B.friends.includes(to)) B.friends.push(to);
-        A.requests = (A.requests || []).filter(r => r !== from);
-        saveUsers();
-        const sock = online[from];
-        if (sock) sock.emit('friendAccepted', { from: to });
-        const sockTo = online[to];
-        if (sockTo) sockTo.emit('friendAccepted', { from });
-    });
-
-    socket.on('dm', ({ to, msg }) => {
-        if (!to || !msg) return;
-        const dest = online[to];
-        if (dest) dest.emit('dm', { from: socket.username || 'anon', msg });
-    });
-
-    socket.on('disconnect', () => {
-        // remove do mapa online
-        for (const name in online) {
-            if (online[name] === socket) delete online[name];
-        }
-        console.log('socket disconnected', socket.id);
-    });
-});
-
-process.on('uncaughtException', (err) => {
-    console.error('uncaughtException', err && err.stack ? err.stack : err);
-});
-process.on('unhandledRejection', (r) => {
-    console.error('unhandledRejection', r);
-});
-
-server.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-});
-
+        // mirrored (bottom) house walls
+        const mirroredHouseWalls = [
+            { x: s.x, y: WORLD_HEIGHT - s.y - wt, width: s.width, height: wt },
+            { x: s.x, y: WORLD_HEIGHT - (s.y + s.height - wt - 200) - wt, width: s.width - 1300, height: wt },
+            { x: s.x, y: WORLD_HEIGHT - s.y - 820, width: wt, height: 820 },
+            { x: s.x, y: WORLD_HEIGHT - (s.y + 1020) - (s.height - 1220), width: wt, height: s.height - 1220 },
+            { x: s.x + s.width - wt, y: WORLD_HEIGHT - s.y - 250, width: wt, height: 250 },
+            { x: s.x + s.width - wt, y: WORLD_HEIGHT - (s.y + 650) - ((s.height - 770) - 650), width: wt, height: (s.height - 770) - 650 },
+            { x: s.x + 900, y: WORLD_HEIGHT - s.y - 470, width: wt, height: 470 },
+            { x: s.x + 1500, y: WORLD_HEIGHT - s.y - 300, width: wt, height: 300 },
+            { x: s.x + 1338, y: WORLD_HEIGHT - (s.y + 1030) - 440, width: wt, height: 440 },
+            { x: s.x + 2200, y: WORLD_HEIGHT - s.y - 470, width: wt, height: 470 },
+            { x: s.x + 2195, y: WORLD_HEIGHT - (s.y + 750) - 150, width: wt, height: 150 },
+            { x: s.x, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 700, height: wt },
+            { x: s.x + 1800, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 270, height: wt },
+            { x: s.x + 250, y: WORLD_HEIGHT - (s.y + 1020) - wt, width: 850, height: wt },
+            { x: s.x + 1150, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 300, height: wt },
+            { x: s.x + 1570, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 300, height: wt },
+            { x: s.x + 1800, y: WORLD_HEIGHT - s.y - (400 + wt), width: wt, height: 400 + wt },
+            { x: s.x, y: WORLD_HEIGHT - (s.y + 750) - wt, width: 550, height: wt },
+            { x: s.x + 1330, y: WORLD_HEIGHT - (s.y + 830) - wt, width: 533, height: wt },
+            { x: s.x + 2000, y: WORLD_HEIGHT - (s.y + 830) - wt, width: 697, height: wt },
+            { x: s.x + 480, y: WORLD_HEIGHT - (s.y + 620) - 200, width: wt, height: 200 }
+        ];
+        s.walls.push(...mirroredHouseWalls);
+    } else if (s === gameState.house2) {
+        // house2 (nova casa posicionada acima)
+        const wt2 = s.wallThickness;
+        const house2Walls = [
+            { x: s.x, y: s.y, width: s.width, height: wt2 }, // Topo
+            { x: s.x, y: s.y + s.height - wt2, width: s.width, height: wt2 }, // Base
+            { x: s.x, y: s.y, width: wt2, height: s.height }, // Esquerda
+            { x: s.x + s.width - wt2, y: s.y, width: wt2, height: s.height }, // Direita
+            { x: s.x + 400, y: s.y + 200, width: wt2, height: s.height - 400 },
+            { x: s.x + 1200, y: s.y + 100, width: wt2, height: s.height - 200 },
+            { x: s.x + 800, y: s.y + 600, width: s.width - 1000, height: wt2 }
+        ];
+        s.walls.push(...house2Walls);
+    } else if (s === gameState.garage) {
+const PLAYER_ACCELERATION = 1.2;
+const PLAYER_FRICTION = 0.90;
+const ZOMBIE_SPEED_BOOST = 1.50;
+const ZOMBIE_PUSH_MODIFIER = 2;
+const ZOMBIE_MIN_SPEED = 3;
+const SPRINT_DURATION = 10000;
+const SPRINT_COOLDOWN = 30000;
+const SPY_DURATION = 15000;
+const SPY_COOLDOWN = 30000;
+const BUTTERFLY_DURATION = 5000;
+const BUTTERFLY_SPEED = 4;
+const INVISIBILITY_CLOAK_BREAK_DISTANCE = 250;
+const SKATEBOARD_SPEED_BOOST = 7;
+const SKATEBOARD_WIDTH = 90;
+const SKATEBOARD_HEIGHT = 35;
+const DRONE_FOLLOW_FACTOR = 0.05;
+const DRONE_MAX_AMMO = 10;
+const GRENADE_FUSE_TIME = 1500;
+const GRENADE_RADIUS = 200;
+const GRENADE_KNOCKBACK_IMPulse = 30;
+const LARGE_BALL_SPEED = 12;
+const LARGE_BALL_RADIUS = 25;
+const CANNON_COOLDOWN = 2000;
+const CANNON_FRONT_OFFSET = 100;
+const TRAP_DURATION = 1000;
+const TRAP_SIZE = 40;
+const PORTAL_SIZE = 60;
+const PORTAL_COOLDOWN = 1000;
+const DROPPED_ITEM_SIZE = 40;
+const PICKUP_RADIUS = 60;
+const DUCT_TRAVEL_TIME = 1000 / 20;
 const ARROW_SPEED = 30;
 const ARROW_KNOCKBACK_IMPULSES = 0.4;
 const ARROW_LIFESPAN_AFTER_HIT = 3000;
