@@ -1,20 +1,19 @@
-
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
+const { Server } = require("socket.io");
+const Matter = require('matter-js');
+const fs = require('fs-extra');
+const crypto = require('crypto');
 const path = require('path');
-const commands = require('./commands');
 
-const MAX_MESSAGE = 1000;
-
-let chatMessages = [];
-
-// Inicializa Express e servidor HTTP
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// --- Estado do jogo ---
+const commands = require('./commands');
+
+const MAX_MESSAGE = 1000;
+let chatMessages = [];
 
 let a = "abc"
 
@@ -41,6 +40,7 @@ function hashPassword(password) {
     const salt = crypto.randomBytes(16).toString('hex');
     const derived = crypto.scryptSync(password, salt, 64);
     return { salt, hash: derived.toString('hex') };
+}
 
 function verifyPassword(userObj, password) {
     if (!userObj) return false;
@@ -2967,14 +2967,15 @@ function startNewRound() {
         gameState.runningTennis.y = spawnY;
     }
 }
+
 // Tenta iniciar o servidor na porta desejada e, em caso de EADDRINUSE, tenta uma porta alternativa
 const preferredPort = Number(process.env.PORT) || 3000;
 const fallbackPort = preferredPort === 3000 ? 3001 : preferredPort + 1;
 
 function startOnPort(port) {
-    server.listen(port, '0.0.0.0', () => {
+    server.listen(port, () => {
         initializeGame();
-        console.log(`🚀 Game server running on port ${port}`);
+        console.log(`🚀 Game server running at http://localhost:${port}`);
     });
     server.on('error', (err) => {
         if (err.code === 'EADDRINUSE') {
@@ -2992,7 +2993,12 @@ function startOnPort(port) {
     });
 }
 
-}
-}
-}
 startOnPort(preferredPort);
+
+// extra safety closers (balance unclosed blocks if any)
+try {
+    // noop
+} catch(e) {}
+
+}
+}
