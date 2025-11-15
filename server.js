@@ -10,6 +10,14 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err && err.stack ? err.stack : err);
+    process.exit(1);
+});
+process.on('unhandledRejection', (reason, p) => {
+    console.error('Unhandled Rejection at:', p, 'reason:', reason && reason.stack ? reason.stack : reason);
+});
+
 const commands = require('./commands');
 
 const MAX_MESSAGE = 1000;
@@ -2995,10 +3003,10 @@ function startOnPort(port) {
 
 startOnPort(preferredPort);
 
+}
+}
+
 // extra safety closers (balance unclosed blocks if any)
 try {
     // noop
 } catch(e) {}
-
-}
-}
