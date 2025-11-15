@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <script src="editor.js"></script>
     <canvas id="gameCanvas" tabindex="0"></canvas>
     <input type="text" id="chatInput" placeholder="Pressione Enter para conversar..." autocomplete="off">
     
@@ -99,10 +98,12 @@
           </div>
         </div>
 
-    </div> <script src="/socket.io/socket.io.js"></script>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
+      const socket = io();
     </script>
+    <script src="editor.js"></script>
     <script src="menu.js"></script>
     <script src="game.js"></script>
 </body>

@@ -164,6 +164,15 @@ socket.on('connect', () => {
     // The login screen from your HTML should handle user identification now.
 });
 
+// Chamado pelo menu quando o usuário clica em "Play".
+function startGame(username) {
+    if (!username) return;
+    // Se já tivermos o player local criado no estado, atualiza o nome
+    if (myId && gameState.players && gameState.players[myId]) {
+        gameState.players[myId].name = username;
+    }
+}
+
 socket.on('gameStateUpdate', (serverState) => {
     if (myId && gameState.players[myId] && serverState.players[myId]) {
         const meBefore = gameState.players[myId];

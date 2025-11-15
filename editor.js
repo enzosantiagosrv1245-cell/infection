@@ -332,5 +332,17 @@ const EditorSystem = {
 
 if (typeof window !== 'undefined') {
     window.EditorSystem = EditorSystem;
-    document.addEventListener('DOMContentLoaded', () => EditorSystem.init());
+    // Só inicia o editor quando o servidor informar que o jogador é dev
+    if (typeof socket !== 'undefined') {
+        socket.on('devMode', (flag) => {
+            if (flag) {
+                // Initialize editor UI for devs
+                if (!EditorSystem.editorButton) EditorSystem.init();
+            } else {
+                // Remove editor button se existir
+                if (EditorSystem.editorButton) EditorSystem.editorButton.remove();
+                EditorSystem.editorButton = null;
+            }
+        });
+    }
 }

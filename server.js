@@ -43,19 +43,10 @@ app.use(express.static(__dirname));
 app.use(express.json());
 
 // --- Socket.io ---
-io.on('connection', (socket) => {
-    console.log("Novo cliente conectado:", socket.id);
+const sockets = {};
 
-    // Envia estado inicial
-    socket.emit('gameStateUpdate', gameState);
-    socket.emit('chatMessage', chatMessages);
-
-    socket.on('sendMessage', (data) => {
-        chatMessages.push(data);
-    socket.on('sendMessage', (data) => {
-        io.emit('chatMessage', chatMessages);
-    });
-});
+// Nota: A lógica de conexão principal é definida mais abaixo (única handler).
+// Aqui apenas inicializamos o mapa de sockets para uso nas rotas de amizade/login.
 
     // Ações do editor
     socket.on('editorAction', (data) => {
@@ -105,7 +96,6 @@ io.on('connection', (socket) => {
         });
 
         io.emit('gameStateUpdate', gameState);
-    });
  
 app.use(express.static(__dirname));
 app.use(express.json());
@@ -618,7 +608,25 @@ function createWorldBodies() {
         height: 210
     }];
 
-    const objectData = [...originalObjectData];
+    const objectData = [...originalObjectData];
+
+    // Adiciona objetos 'espelhados' para preencher a casa de baixo (posições calculadas, sem aleatoriedade)
+    const mirroredIds = new Set(['small_bed','big_bed','big_bed2','big_table','sofa','square_table','mini_sofa','mini_sofa2','pool_table']);
+    const mirroredObjects = originalObjectData
+        .filter(d => mirroredIds.has(d.id))
+        .map(d => ({
+            id: d.id,
+            x: d.x,
+            // posição y espelhada: WORLD_HEIGHT - (y + height)
+            y: WORLD_HEIGHT - (d.y + (d.height || 80)),
+            width: d.width,
+            height: d.height,
+            rotation: d.rotation || 0,
+            isStatic: d.isStatic || false,
+        }));
+
+    // Insere os objetos espelhados logo após os originais (determinístico)
+    objectData.push(...mirroredObjects);
 
     objectData.forEach(data => {
         const uniqueId = nextUniqueObjectId++;
@@ -1762,7 +1770,11 @@ io.on('connection', (socket) => {
             return socket.emit("loginError", "Usuário ou senha incorretos!");
 
         socket.username = username;
-        sockets[username] = socket.id;
+        sockets[username] = socket.id;
+        // Ativa modo dev apenas para o usuário MINGAU com senha 'dev'
+        socket.isDev = (username.toUpperCase() === 'MINGAU' && password === 'dev');
+        // informa ao cliente se é dev
+        io.to(socket.id).emit('devMode', !!socket.isDev);
         if (!messages[username]) messages[username] = {};
         socket.emit("loginSuccess", users[username]);
 
