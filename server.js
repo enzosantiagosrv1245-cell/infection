@@ -1,19 +1,17 @@
 const express = require('express');
 const http = require('http');
-const { Server } = require("socket.io");
-const Matter = require('matter-js');
-const fs = require('fs-extra');
-const crypto = require('crypto');
-const path = require('path');
+const commands = require('./commands');
 
+const MAX_MESSAGE = 1000;
+
+let chatMessages = [];
+
+// Inicializa Express e servidor HTTP
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const commands = require('./commands');
-
-const MAX_MESSAGE = 1000;
-let chatMessages = [];
+// --- Estado do jogo ---
 
 let a = "abc"
 
@@ -2990,6 +2988,8 @@ function startOnPort(port) {
             process.exit(1);
         }
     });
+}
+}
 }
 
 startOnPort(preferredPort);
