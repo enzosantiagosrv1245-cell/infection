@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const { Server } = require('socket.io');
 const commands = require('./commands');
 
 const MAX_MESSAGE = 1000;
@@ -38,7 +39,6 @@ function hashPassword(password) {
     const salt = crypto.randomBytes(16).toString('hex');
     const derived = crypto.scryptSync(password, salt, 64);
     return { salt, hash: derived.toString('hex') };
-}
 
 function verifyPassword(userObj, password) {
     if (!userObj) return false;
@@ -2989,7 +2989,8 @@ function startOnPort(port) {
         }
     });
 }
-}
-}
 
+}
+}
+}
 startOnPort(preferredPort);
