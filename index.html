@@ -1,6 +1,63 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Infestation</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="ui-root">
+    <div id="main-menu-panel" class="menu-panel">
+      <h1>Infestation</h1>
+      <div id="login-section">
+        <button id="loginBtn" class="profile-btn">Log in</button>
+      </div>
+      <div id="play-section" class="hidden">
+        <button id="playGameBtn">Play</button>
+        <p class="logged-in-status">Connected as <span id="playerName"></span></p>
+      </div>
+    </div>
+
+    <div id="profileBallContainer"></div>
+
+    <div id="loginModal" class="modal hidden">
+      <div class="modal-content">
+        <h2>Log in</h2>
+        <input type="text" id="username" placeholder="Usuário">
+        <input type="password" id="password" placeholder="Senha">
+        <div class="modal-buttons">
+          <button id="registerBtn">Create account</button>
+          <button id="loginSubmitBtn">Log in</button>
+          <button id="closeModalBtn">Close</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    window.isDevClient = false;
+    socket.on && socket.on('devMode', (flag) => { window.isDevClient = !!flag; });
+    // block common devtools shortcuts for non-dev clients
+    document.addEventListener('keydown', (e) => {
+      if (!window.isDevClient && e.key && ((e.ctrlKey && e.shiftKey && (e.key.toLowerCase() === 'i' || e.key.toLowerCase() === 'j' || e.key.toLowerCase() === 'c')) || (e.key === 'F12'))) {
+        e.preventDefault();
+      }
+    }, true);
+    document.addEventListener('contextmenu', (e) => { if (!window.isDevClient) e.preventDefault(); });
+  </script>
+
+  <script src="menu.js"></script>
+  <script src="game.js"></script>
+  <script src="editor.js"></script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
                     <li><span class="key">E</span> - Pick up item</li>
     <!-- Script Mobile ANTES dos scripts do jogo -->
     <script src="game-mobile.js"></script>
