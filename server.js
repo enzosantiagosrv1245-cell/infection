@@ -87,7 +87,7 @@ let nextArrowId = 0,
     nextUniqueObjectId = 0;
 
 const WORLD_WIDTH = 6000;
-const WORLD_HEIGHT = 4000;
+const WORLD_HEIGHT = 6000; // Aumentado para comportar nova casa
 const ROUND_DURATION = 120;
 const SAND_AREA = {
     x: 4080,
@@ -327,22 +327,30 @@ function initializeGame() {
         },
         ducts: [...originalDucts],
         sunshades: [...originalSunshades, ...mirroredSunshades],
-        house: {
-            x: 200,
-            y: 200,
-            width: 2697,
-            height: 1670,
-            wallThickness: 70, // ALTERADO: Espessura da parede aumentada
-            walls: []
-        },
-        garage: {
-            x: 800,
-            y: 1400,
-            width: 700,
-            height: 600,
-            wallThickness: 70, // ALTERADO: Espessura da parede aumentada
-            walls: []
-        },
+        house: {
+            x: 200,
+            y: 200,
+            width: 2697,
+            height: 1670,
+            wallThickness: 70,
+            walls: []
+        },
+        garage: {
+            x: 800,
+            y: 1400,
+            width: 700,
+            height: 600,
+            wallThickness: 70,
+            walls: []
+        },
+        house2: {
+            x: 400,
+            y: 4000, // Casa nova acima da original
+            width: 2200,
+            height: 1400,
+            wallThickness: 60,
+            walls: []
+        },
     };
     createWorldBodies();
     createSharks();
@@ -591,9 +599,10 @@ function createWorldBodies() {
         });
     });
 
-    buildWalls(gameState.house);
-    buildWalls(gameState.garage);
-    [...gameState.house.walls, ...gameState.garage.walls].forEach(wall => {
+    buildWalls(gameState.house);
+    buildWalls(gameState.garage);
+    buildWalls(gameState.house2); // Nova casa
+    [...gameState.house.walls, ...gameState.garage.walls, ...gameState.house2.walls].forEach(wall => {
         allBodies.push(Matter.Bodies.rectangle(wall.x + wall.width / 2, wall.y + wall.height / 2, wall.width, wall.height, {
             isStatic: true,
             label: 'wall',
@@ -611,7 +620,22 @@ function buildWalls(structure) {
     const wt = s.wallThickness;
     s.walls = [];
 
-    if (s === gameState.house) {
+    if (s === gameState.house) {
+    // Nova casa
+    if (s === gameState.house2) {
+        const wt2 = s.wallThickness;
+        const house2Walls = [
+            { x: s.x, y: s.y, width: s.width, height: wt2 }, // Topo
+            { x: s.x, y: s.y + s.height - wt2, width: s.width, height: wt2 }, // Base
+            { x: s.x, y: s.y, width: wt2, height: s.height }, // Esquerda
+            { x: s.x + s.width - wt2, y: s.y, width: wt2, height: s.height }, // Direita
+            // Divisórias internas
+            { x: s.x + 400, y: s.y + 200, width: wt2, height: s.height - 400 },
+            { x: s.x + 1200, y: s.y + 100, width: wt2, height: s.height - 200 },
+            { x: s.x + 800, y: s.y + 600, width: s.width - 1000, height: wt2 }
+        ];
+        s.walls.push(...house2Walls);
+    }
         // --- PARTE 1: DEFINIÇÃO DAS PAREDES DA CASA ORIGINAL (NÃO MEXA AQUI) ---
         const originalHouseWalls = [
             { x: s.x, y: s.y, width: s.width, height: wt },
