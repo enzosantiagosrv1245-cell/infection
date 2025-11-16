@@ -130,15 +130,20 @@ io.on('connection', (socket) => {
     });
 
     socket.on('login', ({ username, password }) => {
+        console.log(`🔐 [LOGIN] Tentando login para usuário: ${username}`);
         if (!users[username] || !verifyPassword(users[username], password)) {
+            console.log(`❌ [LOGIN] Falha: credenciais inválidas para ${username}`);
             socket.emit('loginError', 'Invalid credentials');
             return;
         }
+        console.log(`✅ [LOGIN] Sucesso para ${username}. Emitindo loginSuccess...`);
         socket.emit('loginSuccess', {
             username,
             role: users[username].role,
             profile: users[username].profile
         });
+        console.log(`📤 [GAMESTATE] Enviando estado inicial do jogo para ${username}...`);
+        socket.emit('gameStateUpdate', gameState);
     });
 
     socket.on('disconnect', () => {
