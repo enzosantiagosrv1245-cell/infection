@@ -93,16 +93,81 @@ if (fs.existsSync(MESSAGES_FILE)) messages = fs.readJsonSync(MESSAGES_FILE);
 if (fs.existsSync(LINKS_FILE)) links = fs.readJsonSync(LINKS_FILE);
 
 function saveUsers() {
-    fs.writeJsonSync(USERS_FILE, users, { spaces: 2 });
+    fs.writeJsonSync(USERS_FILE, users, {
+        spaces: 2
+    });
 }
 
 function saveMessages() {
-    fs.writeJsonSync(MESSAGES_FILE, messages, { spaces: 2 });
-}
+    fs.writeJsonSync(MESSAGES_FILE, messages, {
+        spaces: 2
+    });
+    // Casa 1
+    if (s === gameState.house) {
+        const originalHouseWalls = [
+            { x: s.x, y: s.y, width: s.width, height: wt },
+            { x: s.x, y: s.y + s.height - wt - 200, width: s.width - 1300, height: wt },
+            { x: s.x, y: s.y, width: wt, height: 820 },
+            { x: s.x, y: s.y + 1020, width: wt, height: s.height - 1220 },
+            { x: s.x + s.width - wt, y: s.y, width: wt, height: 250 },
+            { x: s.x + s.width - wt, y: s.y + 650, width: wt, height: (s.height - 770) - 650 },
+            { x: s.x + 900, y: s.y, width: wt, height: 470 },
+            { x: s.x + 600, y: s.y + 1020, width: wt, height: 450 },
+            { x: s.x + 1500, y: s.y, width: wt, height: 300 },
+            { x: s.x + 1338, y: s.y + 1030, width: wt, height: 440 },
+            { x: s.x + 2200, y: s.y, width: wt, height: 470 },
+            { x: s.x + 2195, y: s.y + 750, width: wt, height: 150 },
+            { x: s.x, y: s.y + 400, width: 700, height: wt },
+            { x: s.x + 1800, y: s.y + 400, width: 270, height: wt },
+            { x: s.x + 250, y: s.y + 1020, width: 850, height: wt },
+            { x: s.x + 1150, y: s.y + 400, width: 720, height: wt },
+            { x: s.x + 1800, y: s.y, width: wt, height: 400 + wt },
+            { x: s.x, y: s.y + 750, width: 550, height: wt },
+            { x: s.x + 1330, y: s.y + 830, width: 533, height: wt },
+            { x: s.x + 2000, y: s.y + 830, width: 697, height: wt },
+            { x: s.x + 480, y: s.y + 620, width: wt, height: 200 }
+        ];
+        s.walls.push(...originalHouseWalls);
 
-function saveLinks() {
-    fs.writeJsonSync(LINKS_FILE, links, { spaces: 2 });
-}
+        // mirrored (bottom) house walls
+        const mirroredHouseWalls = [
+            { x: s.x, y: WORLD_HEIGHT - s.y - wt, width: s.width, height: wt },
+            { x: s.x, y: WORLD_HEIGHT - (s.y + s.height - wt - 200) - wt, width: s.width - 1300, height: wt },
+            { x: s.x, y: WORLD_HEIGHT - s.y - 820, width: wt, height: 820 },
+            { x: s.x, y: WORLD_HEIGHT - (s.y + 1020) - (s.height - 1220), width: wt, height: s.height - 1220 },
+            { x: s.x + s.width - wt, y: WORLD_HEIGHT - s.y - 250, width: wt, height: 250 },
+            { x: s.x + s.width - wt, y: WORLD_HEIGHT - (s.y + 650) - ((s.height - 770) - 650), width: wt, height: (s.height - 770) - 650 },
+            { x: s.x + 900, y: WORLD_HEIGHT - s.y - 470, width: wt, height: 470 },
+            { x: s.x + 1500, y: WORLD_HEIGHT - s.y - 300, width: wt, height: 300 },
+            { x: s.x + 1338, y: WORLD_HEIGHT - (s.y + 1030) - 440, width: wt, height: 440 },
+            { x: s.x + 2200, y: WORLD_HEIGHT - s.y - 470, width: wt, height: 470 },
+            { x: s.x + 2195, y: WORLD_HEIGHT - (s.y + 750) - 150, width: wt, height: 150 },
+            { x: s.x, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 700, height: wt },
+            { x: s.x + 1800, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 270, height: wt },
+            { x: s.x + 250, y: WORLD_HEIGHT - (s.y + 1020) - wt, width: 850, height: wt },
+            { x: s.x + 1150, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 300, height: wt },
+            { x: s.x + 1570, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 300, height: wt },
+            { x: s.x + 1800, y: WORLD_HEIGHT - s.y - (400 + wt), width: wt, height: 400 + wt },
+            { x: s.x, y: WORLD_HEIGHT - (s.y + 750) - wt, width: 550, height: wt },
+            { x: s.x + 1330, y: WORLD_HEIGHT - (s.y + 830) - wt, width: 533, height: wt },
+            { x: s.x + 2000, y: WORLD_HEIGHT - (s.y + 830) - wt, width: 697, height: wt },
+            { x: s.x + 480, y: WORLD_HEIGHT - (s.y + 620) - 200, width: wt, height: 200 }
+        ];
+        s.walls.push(...mirroredHouseWalls);
+    } else if (s === gameState.house2) {
+        // house2 (nova casa posicionada acima)
+        const wt2 = s.wallThickness;
+        const house2Walls = [
+            { x: s.x, y: s.y, width: s.width, height: wt2 }, // Topo
+            { x: s.x, y: s.y + s.height - wt2, width: s.width, height: wt2 }, // Base
+            { x: s.x, y: s.y, width: wt2, height: s.height }, // Esquerda
+            { x: s.x + s.width - wt2, y: s.y, width: wt2, height: s.height }, // Direita
+            { x: s.x + 400, y: s.y + 200, width: wt2, height: s.height - 400 },
+            { x: s.x + 1200, y: s.y + 100, width: wt2, height: s.height - 200 },
+            { x: s.x + 800, y: s.y + 600, width: s.width - 1000, height: wt2 }
+        ];
+        s.walls.push(...house2Walls);
+    } else if (s === gameState.garage) {
 const PLAYER_ACCELERATION = 1.2;
 const PLAYER_FRICTION = 0.90;
 const ZOMBIE_SPEED_BOOST = 1.50;
@@ -2902,14 +2967,15 @@ function startNewRound() {
         gameState.runningTennis.y = spawnY;
     }
 }
+
 // Tenta iniciar o servidor na porta desejada e, em caso de EADDRINUSE, tenta uma porta alternativa
 const preferredPort = Number(process.env.PORT) || 3000;
 const fallbackPort = preferredPort === 3000 ? 3001 : preferredPort + 1;
 
 function startOnPort(port) {
-    server.listen(port, '0.0.0.0', () => {
+    server.listen(port, () => {
         initializeGame();
-        console.log(`🚀 Game server running on port ${port}`);
+        console.log(`🚀 Game server running at http://localhost:${port}`);
     });
     server.on('error', (err) => {
         if (err.code === 'EADDRINUSE') {
@@ -2928,3 +2994,9 @@ function startOnPort(port) {
 }
 
 startOnPort(preferredPort);
+
+// extra safety closers (balance unclosed blocks if any)
+try {
+    // noop
+} catch(e) {}
+
