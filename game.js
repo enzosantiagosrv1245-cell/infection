@@ -193,7 +193,6 @@ socket.on('newMessage', (message) => {
 
 canvas.addEventListener('mousedown', function(event) {
 
-    if (isMobile) return;
     
     if (typeof EditorSystem !== 'undefined' && EditorSystem.isEditorMode) {
         const me = gameState.players[myId];
