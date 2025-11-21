@@ -333,33 +333,36 @@ const EditorSystem = {
             const player = gameState.players[playerId];
             if (worldX >= player.x && worldX <= player.x + player.width &&
                 worldY >= player.y && worldY <= player.y + player.height) {
+                // prompt selection
                 if (this.selectedPlayer && this.selectedPlayer.id === player.id) {
                     // already selected - start dragging
                     this.isDraggingSelected = true;
                     return true;
                 }
-                // select immediately (no confirm) and start dragging
-                this.selectedPlayer = player;
-                this.selectedObject = null;
-                this.isDraggingSelected = true;
-                this.updateSelectedInfo();
+                if (confirm('Selecionar jogador ' + player.name + ' ?')) {
+                    this.selectedPlayer = player;
+                    this.selectedObject = null;
+                    this.isDraggingSelected = true;
+                    this.updateSelectedInfo();
+                }
                 return true;
             }
         }
 
         // Then objects
         for (let obj of gameState.objects) {
-            if (worldX >= obj.x && worldX <= obj.x + (obj.width || 0) &&
-                worldY >= obj.y && worldY <= obj.y + (obj.height || 0)) {
+            if (worldX >= obj.x && worldX <= obj.x + obj.width &&
+                worldY >= obj.y && worldY <= obj.y + obj.height) {
                 if (this.selectedObject && this.selectedObject.uniqueId === obj.uniqueId) {
                     this.isDraggingSelected = true;
                     return true;
                 }
-                // select immediately (no confirm) and start dragging
-                this.selectedObject = obj;
-                this.selectedPlayer = null;
-                this.isDraggingSelected = true;
-                this.updateSelectedInfo();
+                if (confirm('Selecionar objeto ' + obj.id + ' ?')) {
+                    this.selectedObject = obj;
+                    this.selectedPlayer = null;
+                    this.isDraggingSelected = true;
+                    this.updateSelectedInfo();
+                }
                 return true;
             }
         }
