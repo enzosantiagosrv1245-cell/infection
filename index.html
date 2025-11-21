@@ -103,6 +103,34 @@
     <script>
       var socket = io();
     </script>
+    <script>
+      // Bloqueia teclas de devtools para jogadores não-dev (não é 100% à prova)
+      window.isDevClient = false;
+      socket.on && socket.on('devMode', (flag) => {
+        window.isDevClient = !!flag;
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (window.isDevClient) return; // dev liberado
+        // F12 or Ctrl+Shift+I / Cmd+Opt+I
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i') || (e.metaKey && e.altKey && e.key.toLowerCase() === 'i')) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
+        // also block Ctrl+Shift+C / Ctrl+Shift+J
+        if ((e.ctrlKey && e.shiftKey && (e.key.toLowerCase() === 'c' || e.key.toLowerCase() === 'j'))) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
+      }, true);
+
+      // Block context menu for non-devs
+      document.addEventListener('contextmenu', (e) => {
+        if (!window.isDevClient) {
+          e.preventDefault();
+        }
+      });
+    </script>
     <script src="menu.js"></script>
     <script src="game.js"></script>
     <script src="editor.js"></script>

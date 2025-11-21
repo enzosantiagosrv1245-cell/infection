@@ -3,6 +3,7 @@ const http = require('http');
 const { Server } = require("socket.io");
 const Matter = require('matter-js');
 const fs = require('fs-extra');
+const crypto = require('crypto');
 const path = require('path');
 
 const app = express();
@@ -33,6 +34,42 @@ const LINKS_FILE = path.join(__dirname, "links.json");
 let users = fs.existsSync(USERS_FILE) ? fs.readJsonSync(USERS_FILE) : {};
 let messages = fs.existsSync(MESSAGES_FILE) ? fs.readJsonSync(MESSAGES_FILE) : {};
 let links = fs.existsSync(LINKS_FILE) ? fs.readJsonSync(LINKS_FILE) : [];
+
+// --- Segurança: hash de senhas ---
+function hashPassword(password) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const derived = crypto.scryptSync(password, salt, 64);
+    return { salt, hash: derived.toString('hex') };
+}
+
+function verifyPassword(userObj, password) {
+    if (!userObj) return false;
+    // compat com campo antigo 'password' (texto puro)
+    if (userObj.password) return userObj.password === password;
+    if (userObj.passwordHash && userObj.salt) {
+        const derived = crypto.scryptSync(password, userObj.salt, 64).toString('hex');
+        return derived === userObj.passwordHash;
+    }
+    return false;
+}
+
+// Migra usuários com senha em texto para hash (segurança e "codificação")
+function migrateUsersToHashed() {
+    let changed = false;
+    for (const name in users) {
+        const u = users[name];
+        if (u && u.password && !u.passwordHash) {
+            const { salt, hash } = hashPassword(u.password);
+            u.salt = salt;
+            u.passwordHash = hash;
+            delete u.password; // remove plaintext
+            changed = true;
+        }
+    }
+    if (changed) saveUsers();
+}
+
+migrateUsersToHashed();
 
 function saveUsers() {
     fs.writeJsonSync(USERS_FILE, users, { spaces: 2 });
@@ -65,55 +102,72 @@ function saveMessages() {
     fs.writeJsonSync(MESSAGES_FILE, messages, {
         spaces: 2
     });
-}
+    // Casa 1
+    if (s === gameState.house) {
+        const originalHouseWalls = [
+            { x: s.x, y: s.y, width: s.width, height: wt },
+            { x: s.x, y: s.y + s.height - wt - 200, width: s.width - 1300, height: wt },
+            { x: s.x, y: s.y, width: wt, height: 820 },
+            { x: s.x, y: s.y + 1020, width: wt, height: s.height - 1220 },
+            { x: s.x + s.width - wt, y: s.y, width: wt, height: 250 },
+            { x: s.x + s.width - wt, y: s.y + 650, width: wt, height: (s.height - 770) - 650 },
+            { x: s.x + 900, y: s.y, width: wt, height: 470 },
+            { x: s.x + 600, y: s.y + 1020, width: wt, height: 450 },
+            { x: s.x + 1500, y: s.y, width: wt, height: 300 },
+            { x: s.x + 1338, y: s.y + 1030, width: wt, height: 440 },
+            { x: s.x + 2200, y: s.y, width: wt, height: 470 },
+            { x: s.x + 2195, y: s.y + 750, width: wt, height: 150 },
+            { x: s.x, y: s.y + 400, width: 700, height: wt },
+            { x: s.x + 1800, y: s.y + 400, width: 270, height: wt },
+            { x: s.x + 250, y: s.y + 1020, width: 850, height: wt },
+            { x: s.x + 1150, y: s.y + 400, width: 720, height: wt },
+            { x: s.x + 1800, y: s.y, width: wt, height: 400 + wt },
+            { x: s.x, y: s.y + 750, width: 550, height: wt },
+            { x: s.x + 1330, y: s.y + 830, width: 533, height: wt },
+            { x: s.x + 2000, y: s.y + 830, width: 697, height: wt },
+            { x: s.x + 480, y: s.y + 620, width: wt, height: 200 }
+        ];
+        s.walls.push(...originalHouseWalls);
 
-function saveLinks() {
-    fs.writeJsonSync(LINKS_FILE, links, {
-        spaces: 2
-    });
-}
-
-function generateID() {
-    return "ID" + Math.floor(Math.random() * 1000000);
-}
-
-const TICK_RATE = 1000 / 60;
-let engine, world;
-let bodiesMap = {};
-let nextArrowId = 0,
-    nextGrenadeId = 0,
-    nextTrapId = 0,
-    nextMineId = 0,
-    nextUniqueObjectId = 0;
-
-const WORLD_WIDTH = 6000;
-const WORLD_HEIGHT = 6000; // Aumentado para comportar nova casa
-const ROUND_DURATION = 120;
-const SAND_AREA = {
-    x: 4080,
-    y: 0,
-    width: 1850,
-    height: 2000
-};
-// ALTERADO: Largura do mar aumentada
-const SEA_AREA = {
-    x: 4965,
-    y: 0,
-    width: 2600,
-    height: 4000
-};
-
-const SINKING_AREA = {
-    x: 5165,
-    y: 0,
-    width: 2400, // <<-- Aumentamos a largura (era 2600)
-    height: 4000
-};
-
-const SHARK_BASE_SPEED = 1.5;
-const INITIAL_PLAYER_SIZE = 35;
-const INITIAL_PLAYER_SPEED = 3;
-const MAX_PLAYER_SPEED = 5;
+        // mirrored (bottom) house walls
+        const mirroredHouseWalls = [
+            { x: s.x, y: WORLD_HEIGHT - s.y - wt, width: s.width, height: wt },
+            { x: s.x, y: WORLD_HEIGHT - (s.y + s.height - wt - 200) - wt, width: s.width - 1300, height: wt },
+            { x: s.x, y: WORLD_HEIGHT - s.y - 820, width: wt, height: 820 },
+            { x: s.x, y: WORLD_HEIGHT - (s.y + 1020) - (s.height - 1220), width: wt, height: s.height - 1220 },
+            { x: s.x + s.width - wt, y: WORLD_HEIGHT - s.y - 250, width: wt, height: 250 },
+            { x: s.x + s.width - wt, y: WORLD_HEIGHT - (s.y + 650) - ((s.height - 770) - 650), width: wt, height: (s.height - 770) - 650 },
+            { x: s.x + 900, y: WORLD_HEIGHT - s.y - 470, width: wt, height: 470 },
+            { x: s.x + 1500, y: WORLD_HEIGHT - s.y - 300, width: wt, height: 300 },
+            { x: s.x + 1338, y: WORLD_HEIGHT - (s.y + 1030) - 440, width: wt, height: 440 },
+            { x: s.x + 2200, y: WORLD_HEIGHT - s.y - 470, width: wt, height: 470 },
+            { x: s.x + 2195, y: WORLD_HEIGHT - (s.y + 750) - 150, width: wt, height: 150 },
+            { x: s.x, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 700, height: wt },
+            { x: s.x + 1800, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 270, height: wt },
+            { x: s.x + 250, y: WORLD_HEIGHT - (s.y + 1020) - wt, width: 850, height: wt },
+            { x: s.x + 1150, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 300, height: wt },
+            { x: s.x + 1570, y: WORLD_HEIGHT - (s.y + 400) - wt, width: 300, height: wt },
+            { x: s.x + 1800, y: WORLD_HEIGHT - s.y - (400 + wt), width: wt, height: 400 + wt },
+            { x: s.x, y: WORLD_HEIGHT - (s.y + 750) - wt, width: 550, height: wt },
+            { x: s.x + 1330, y: WORLD_HEIGHT - (s.y + 830) - wt, width: 533, height: wt },
+            { x: s.x + 2000, y: WORLD_HEIGHT - (s.y + 830) - wt, width: 697, height: wt },
+            { x: s.x + 480, y: WORLD_HEIGHT - (s.y + 620) - 200, width: wt, height: 200 }
+        ];
+        s.walls.push(...mirroredHouseWalls);
+    } else if (s === gameState.house2) {
+        // house2 (nova casa posicionada acima)
+        const wt2 = s.wallThickness;
+        const house2Walls = [
+            { x: s.x, y: s.y, width: s.width, height: wt2 }, // Topo
+            { x: s.x, y: s.y + s.height - wt2, width: s.width, height: wt2 }, // Base
+            { x: s.x, y: s.y, width: wt2, height: s.height }, // Esquerda
+            { x: s.x + s.width - wt2, y: s.y, width: wt2, height: s.height }, // Direita
+            { x: s.x + 400, y: s.y + 200, width: wt2, height: s.height - 400 },
+            { x: s.x + 1200, y: s.y + 100, width: wt2, height: s.height - 200 },
+            { x: s.x + 800, y: s.y + 600, width: s.width - 1000, height: wt2 }
+        ];
+        s.walls.push(...house2Walls);
+    } else if (s === gameState.garage) {
 const PLAYER_ACCELERATION = 1.2;
 const PLAYER_FRICTION = 0.90;
 const ZOMBIE_SPEED_BOOST = 1.50;
@@ -543,15 +597,31 @@ function createWorldBodies() {
         y: 3600,
         width: 100,
         height: 240
-    }, {
-        id: 'pool_table',
-        x: 1000,
-        y: 800,
-        width: 340,
-        height: 210
-    }];
-
-    const objectData = [...originalObjectData];
+    }, {
+        id: 'pool_table',
+        x: 1000,
+        y: 800,
+        width: 340,
+        height: 210
+    }, {
+        id: 'box',
+        x: 600,
+        y: 4200,
+        width: 120,
+        height: 120
+    }, {
+        id: 'mini_sofa',
+        x: 800,
+        y: 4300,
+        width: 120,
+        height: 100
+    }, {
+        id: 'square_table',
+        x: 1200,
+        y: 4250,
+        width: 170,
+        height: 170
+    }];    const objectData = [...originalObjectData];
 
     // Adiciona objetos 'espelhados' para preencher a casa de baixo (posições calculadas, sem aleatoriedade)
     const mirroredIds = new Set(['small_bed','big_bed','big_bed2','big_table','sofa','square_table','mini_sofa','mini_sofa2','pool_table']);
@@ -1705,20 +1775,22 @@ io.on('connection', (socket) => {
         username,
         password
     }) => {
-        if (users[username]) return socket.emit("registerError", "Usuário já existe!");
-        const id = generateID();
-        users[username] = {
-            id,
-            username,
-            password,
-            color: "#3498db",
-            photo: null,
-            editedName: false,
-            friends: [],
-            requests: []
-        };
-        saveUsers();
-        socket.emit("registerSuccess", users[username]);
+        if (users[username]) return socket.emit("registerError", "Usuário já existe!");
+        const id = generateID();
+        const { salt, hash } = hashPassword(password);
+        users[username] = {
+            id,
+            username,
+            salt,
+            passwordHash: hash,
+            color: "#3498db",
+            photo: null,
+            editedName: false,
+            friends: [],
+            requests: []
+        };
+        saveUsers();
+        socket.emit("registerSuccess", users[username]);
     });
 
     socket.on("login", ({
@@ -1742,7 +1814,7 @@ io.on('connection', (socket) => {
             }
         }
 
-        if (!users[username] || users[username].password !== password)
+        if (!users[username] || !verifyPassword(users[username], password))
             return socket.emit("loginError", "Usuário ou senha incorretos!");
 
         socket.username = username;
@@ -1891,9 +1963,16 @@ io.on('connection', (socket) => {
                 gameState.objects.push(obj);
 
                 // create physics body
+                function normalizeAngle(a) {
+                    if (typeof a !== 'number') return 0;
+                    // if angle looks like degrees (> 2PI), convert to radians
+                    if (Math.abs(a) > Math.PI * 2) return a * (Math.PI / 180);
+                    return a;
+                }
+
                 const body = Matter.Bodies.rectangle(obj.x + (obj.width || 80) / 2, obj.y + (obj.height || 80) / 2, obj.width || 80, obj.height || 80, {
                     isStatic: !!obj.isStatic,
-                    angle: (obj.rotation || 0),
+                    angle: normalizeAngle(obj.rotation || 0),
                     friction: 0.000002,
                     frictionAir: 0.07,
                     restitution: 0.5,
@@ -1926,7 +2005,10 @@ io.on('connection', (socket) => {
                 if (rotObj) {
                     rotObj.rotation = data.rotation;
                     const body = bodiesMap[rotObj.uniqueId];
-                    if (body) Matter.Body.setAngle(body, rotObj.rotation);
+                    if (body) {
+                        const a = (function(a){ if (typeof a !== 'number') return 0; if (Math.abs(a) > Math.PI*2) return a*(Math.PI/180); return a; })(rotObj.rotation);
+                        Matter.Body.setAngle(body, a);
+                    }
                 }
                 break;
             }
@@ -2912,3 +2994,11 @@ function startOnPort(port) {
 }
 
 startOnPort(preferredPort);
+
+// extra safety closers (balance unclosed blocks if any)
+try {
+    // noop
+} catch(e) {}
+
+}
+};
