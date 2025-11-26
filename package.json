@@ -2,12 +2,13 @@
   "dependencies": {
     "express": "^5.1.0",
     "fs-extra": "^11.3.1",
+    "jsdom": "^27.0.0",
     "matter-js": "^0.20.0",
     "socket.io": "^4.8.1"
   },
   "name": "infestation-game",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "game.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"

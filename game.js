@@ -11,22 +11,28 @@ const ctx = canvas.getContext('2d');
         overflow: 'hidden'
     });
 
+    // Estilos do chatInput foram movidos para o style.css para melhor organização
     chatInput.maxLength = 57;
 
     function resizeCanvas() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
     }
+
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
-})();
+}());
 
+// ---------- Sprites do game ----------//
+
+// Carrega os sprites
 function loadImage(src) {
     const img = new Image();
     img.src = src;
     return img;
 }
 
+// sprites
 const human = loadImage('Sprites/Human.png');
 const zombie = loadImage('Sprites/Zombie.png');
 const box = loadImage('Sprites/Box.png');
@@ -119,7 +125,7 @@ const objectSprites = {
     pool_table: poolTableSprite
 };
 
-let myId = null;
+// ---------- ???? ---------- //
 let gameState = {
     players: {},
     arrows: [],
@@ -140,6 +146,8 @@ let gameState = {
     floatingTexts: [],
     hidingSpots: []
 };
+
+// ---------- Movimentação do personagem ---------- //
 const movement = {
     up: false,
     down: false,
@@ -150,28 +158,25 @@ let mouse = {
     x: 0,
     y: 0
 };
+
+// ---------- Interaction box of user ---------- //
 let isMenuOpen = false;
 let isProfileOpen = false;
 let isInstructionsOpen = true;
 let activeMenuTab = 'functions';
+
+// ---------- Sala de conversação interação ---------- //
 const chatInput = document.getElementById('chatInput');
 let isChatting = false;
 let chatMessages = [];
 const MAX_MESSAGES = 10;
 
+// --- servidor ???? --- //
+let myId = null;
 socket.on('connect', () => {
     myId = socket.id;
     // The login screen from your HTML should handle user identification now.
 });
-
-// Chamado pelo menu quando o usuário clica em "Play".
-function startGame(username) {
-    if (!username) return;
-    // Se já tivermos o player local criado no estado, atualiza o nome
-    if (myId && gameState.players && gameState.players[myId]) {
-        gameState.players[myId].name = username;
-    }
-}
 
 socket.on('gameStateUpdate', (serverState) => {
     if (myId && gameState.players[myId] && serverState.players[myId]) {
@@ -191,27 +196,8 @@ socket.on('newMessage', (message) => {
     }
 });
 
-canvas.addEventListener('mousedown', function(event) {
-
-    if (isMobile) return;
-    
-    if (typeof EditorSystem !== 'undefined' && EditorSystem.isEditorMode) {
-        const me = gameState.players[myId];
-        if (me) {
-            const zoomLevel = 0.67;
-            const cameraX = (me.x + me.width / 2) - canvas.width / (2 * zoomLevel);
-            const cameraY = (me.y + me.height / 2) - canvas.height / (2 * zoomLevel);
-            const worldX = mouse.x / zoomLevel + cameraX;
-            const worldY = mouse.y / zoomLevel + cameraY;
-            
-            if (EditorSystem.handleClick(worldX, worldY)) {
-                return;
-            }
-        }
-    }
-},
-
-window.addEventListener('keydown', function(event) {
+// provavelmente movimentação
+window.addEventListener('keydown', function (event) {
     const key = event.key.toLowerCase();
     const me = gameState.players[myId];
 
@@ -230,82 +216,7 @@ window.addEventListener('keydown', function(event) {
         }
     }
 
-let editorMode = false;
-function setupMobileControls() {
-    const padding = 20;
-    const buttonSize = 70;
-    
-    // Joystick
-    mobileControls.joystick.centerX = padding + mobileControls.joystick.radius;
-    mobileControls.joystick.centerY = canvas.height - padding - mobileControls.joystick.radius;
-    mobileControls.joystick.knobX = mobileControls.joystick.centerX;
-    mobileControls.joystick.knobY = mobileControls.joystick.centerY;
-    
-    // Botão loja (superior direito)
-    mobileControls.shopButton.x = canvas.width - padding - buttonSize;
-    mobileControls.shopButton.y = padding + 80;
-    mobileControls.shopButton.width = buttonSize;
-    mobileControls.shopButton.height = buttonSize;
-    
-    // Botão chat (inferior direito) 
-    mobileControls.chatButton.x = canvas.width - padding - buttonSize;
-    mobileControls.chatButton.y = canvas.height - padding - buttonSize;
-    mobileControls.chatButton.width = buttonSize;
-    mobileControls.chatButton.height = buttonSize;
-    
-    // Botão ação (meio direita superior)
-    mobileControls.actionButton.x = canvas.width - padding - buttonSize;
-    mobileControls.actionButton.y = canvas.height / 2 - buttonSize - 40;
-    mobileControls.actionButton.width = buttonSize;
-    mobileControls.actionButton.height = buttonSize;
-    
-    // Botão interação (meio direita inferior)
-    mobileControls.interactButton.x = canvas.width - padding - buttonSize;
-    mobileControls.interactButton.y = canvas.height / 2 + 40;
-    mobileControls.interactButton.width = buttonSize;
-    mobileControls.interactButton.height = buttonSize;
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    if (typeof EditorSystem !== 'undefined') {
-        EditorSystem.init();
-    }
-    createCommandListUI();
-});
-
-function createCommandListUI() {
-    const existing = document.getElementById('commandListPanel');
-    if (existing) return;
-    const panel = document.createElement('div');
-    panel.id = 'commandListPanel';
-    panel.style.cssText = `position: fixed; right: 10px; top: 100px; width: 260px; max-height: 70vh; overflow:auto; background: rgba(0,0,0,0.85); color: white; border: 2px solid #fff; border-radius: 8px; padding: 10px; z-index:10000; font-family: Arial; font-size:13px;`;
-    panel.innerHTML = `<h4 style="margin:4px 0 8px 0;text-align:center;">Comandos</h4>`;
-    const commands = [
-        '/help', '/godmode on', '/godmode off', '/mute <name>', '/unmute <name>', '/ban <name>', '/kick <name>', '/rename <newName>', '/rename <oldName> <newName>'
-    ];
-    const list = document.createElement('ul');
-    list.style.padding = '0 10px 10px 20px';
-    commands.forEach(cmd => {
-        const li = document.createElement('li');
-        li.style.marginBottom = '6px';
-        li.style.cursor = 'pointer';
-        li.textContent = cmd;
-        li.title = 'Clique para inserir no chat';
-        li.onclick = () => {
-            const chatInputEl = document.getElementById('chatInput');
-            if (chatInputEl) {
-                chatInputEl.style.display = 'block';
-                chatInputEl.value = cmd + ' ';
-                chatInputEl.focus();
-            }
-        };
-        list.appendChild(li);
-    });
-    panel.appendChild(list);
-    document.body.appendChild(panel);
-}
-
-if (key === '¨') {
+    if (key === '¨') {
         event.preventDefault();
         if (isChatting) {
             const messageText = chatInput.value.trim();
@@ -320,12 +231,14 @@ if (key === '¨') {
         }
     }
 
-    if(key === 'delete'){
-        const X = Math.random() * 200;
+    if (key === 'delete') {
+        const X = Math.random() * 200; // vai gerar números floats(3.243...) tudo bem? 
         const Y = Math.random() * 200;
-        if(Y < 100 , X > 100); return showNotification("Teleport sucessful!", "green");
+        if (Y < 100 && X > 100) {
+            return showNotification("Teleport successful!", "green"); // este showNotification esta a onde?
+        }
     }
-    
+
     if (key === 'escape') {
         if (isChatting) {
             chatInput.value = '';
@@ -398,19 +311,19 @@ if (key === '¨') {
             }
             break;
         case 'w':
-        case 'arrowup':
+        case 'ArrowUp':
             movement.up = true;
             break;
         case 's':
-        case 'arrowdown':
+        case 'ArrowDown':
             movement.down = true;
             break;
         case 'a':
-        case 'arrowleft':
+        case 'ArrowLeft':
             movement.left = true;
             break;
         case 'd':
-        case 'arrowright':
+        case 'ArrowRight':
             movement.right = true;
             break;
         case 'e':
@@ -423,7 +336,7 @@ if (key === '¨') {
                 });
             } else if (me && me.role === 'zombie') {
                 // A ação de se esconder é tratada no 'interact' no servidor,
-                // mas a de usar item especial continua aqui.
+                // mas a de usar ítem especial continua aqui.
                 if (me.zombieAbility) {
                     socket.emit('playerAction', {
                         type: 'zombie_item'
@@ -479,25 +392,25 @@ if (key === '¨') {
             }
             break;
     }
-}));
+});
 
-window.addEventListener('keyup', function(event) {
+window.addEventListener('keyup', function (event) {
     const key = event.key.toLowerCase();
     switch (key) {
         case 'w':
-        case 'arrowup':
+        case 'ArrowUp':
             movement.up = false;
             break;
         case 's':
-        case 'arrowdown':
+        case 'ArrowDown':
             movement.down = false;
             break;
         case 'a':
-        case 'arrowleft':
+        case 'ArrowLeft':
             movement.left = false;
             break;
         case 'd':
-        case 'arrowright':
+        case 'ArrowRight':
             movement.right = false;
             break;
     }
@@ -511,13 +424,13 @@ chatInput.onblur = () => {
     chatInput.style.display = 'none';
 };
 
-canvas.addEventListener('mousemove', function(event) {
+canvas.addEventListener('MouseMove', function (event) {
     const rect = canvas.getBoundingClientRect();
     mouse.x = event.clientX - rect.left;
     mouse.y = event.clientY - rect.top;
 });
 
-canvas.addEventListener('mousedown', function(event) {
+canvas.addEventListener('MouseDown', function (event) {
     const profileIconRadius = 25;
     const coinHudWidth = 180;
     const profileIconX = canvas.width - coinHudWidth - 15 - profileIconRadius - 10;
@@ -697,7 +610,7 @@ canvas.addEventListener('mousedown', function(event) {
     }
 });
 
-canvas.addEventListener('wheel', function(event) {
+canvas.addEventListener('wheel', function (event) {
     const me = gameState.players[myId];
     if (me && me.inventory.some(i => i && i.id === 'gravityGlove') && me.carryingObject) {
         event.preventDefault();
@@ -733,7 +646,7 @@ function draw() {
     ctx.scale(zoomLevel, zoomLevel);
     ctx.translate(-cameraX, -cameraY);
 
-    // ALTERADO: Lógica para desenhar o mapa e sua versão espelhada com o novo chão
+    // ALTERADO: Lógica para desenhar o mapa e a sua versão espelhada com o novo chão
     const drawMapBackground = (floorImg, grassImg) => {
         ctx.drawImage(grassImg, 0, 0, 3100, 2000);
         ctx.drawImage(floorImg, 200, 200, 2697, 1670);
@@ -764,7 +677,7 @@ function draw() {
         }
     }
 
-    // ALTERADO: Lógica para desenhar a areia/rua e sua versão espelhada
+    // ALTERADO: Lógica para desenhar a areia/rua e a sua versão espelhada
     const drawTopLayers = () => {
         ctx.drawImage(sand, 4080, 0, 1850, 2000);
         ctx.drawImage(street, 3090, 0, 1000, 2000);
@@ -821,7 +734,7 @@ function draw() {
 
                     ctx.restore();
                 } else {
-                    // Item normal, fora da água
+                    // ‘Item’ normal, fora da água
                     ctx.drawImage(sprite, item.x, item.y, item.width, item.height);
                 }
             }
@@ -879,7 +792,7 @@ function draw() {
             if (sprite) {
 
                 if (item.isSinking) {
-                    // Objeto está afundando
+                    // Objeto está a afundar
                     ctx.save();
 
                     const progress = item.sinkingProgress || 0;
@@ -1132,14 +1045,11 @@ function draw() {
 
                 ctx.strokeStyle = 'black';
                 ctx.lineWidth = 5;
-                drawInventory(player, nameX, nameY + 10);
-                
-                if (isMobile) {
-    
-                    drawMobileControls();
 
-                }
-
+                // Draw DEV tag in red
+                ctx.fillStyle = 'red';
+                ctx.strokeText(devTag, devTagX, nameY);
+                ctx.fillText(devTag, devTagX, nameY);
 
                 // Draw player name
                 ctx.fillStyle = (player.role === 'zombie' || player.isSpying) ? '#2ecc71' : 'white';
@@ -1178,7 +1088,7 @@ function draw() {
         }
     }
 
-    // ALTERADO: Lógica para desenhar os guarda-sóis e suas versões espelhadas
+    // ALTERADO: Lógica para desenhar os guarda-sóis e a suas versões espelhadas
     const sunshadeRect1 = {
         x: 4350,
         y: 600,
@@ -1215,10 +1125,12 @@ function draw() {
     ctx.restore();
 
     // Guarda-sóis espelhados
-    const mirroredSunshadeRect1 = { ...sunshadeRect1,
+    const mirroredSunshadeRect1 = {
+        ...sunshadeRect1,
         y: 4000 - sunshadeRect1.y - sunshadeRect1.height
     };
-    const mirroredSunshadeRect2 = { ...sunshadeRect2,
+    const mirroredSunshadeRect2 = {
+        ...sunshadeRect2,
         y: 4000 - sunshadeRect2.y - sunshadeRect2.height
     };
 
@@ -1276,9 +1188,6 @@ function draw() {
             ctx.drawImage(grenadeSprite, grenade.x - 10, grenade.y - 10, 20, 20);
         }
     }
-    if (typeof EditorSystem !== 'undefined') {
-    EditorSystem.drawEditorUI(ctx);
-}
 
     ctx.restore();
 
@@ -1488,6 +1397,8 @@ function drawHudText(me) {
     const hudX = canvas.width - coinHudWidth - 15;
     const hudCenterY = 15 + 50 / 2;
 
+
+    // Diz que a constante é redundante posso simplificar ela?
     const contentStartX = hudX + (coinHudWidth - totalContentWidth) / 2;
     const iconX = contentStartX;
     const textX = iconX + iconSize + padding;
@@ -1508,8 +1419,6 @@ function drawHudText(me) {
 
     ctx.restore();
 }
-
-
 
 function drawInventory() {
     const me = gameState.players[myId];
@@ -1647,7 +1556,7 @@ function drawChat() {
 
 
 function drawMenu() {
-    ctx.save(); // CORREÇÃO DE BUG: Isola o estado de desenho do menu
+    ctx.save(); // CORREÇÃO DE BUG - Isola o estado de desenho do menu
 
     const me = gameState.players[myId];
     if (!me) {
@@ -1660,7 +1569,7 @@ function drawMenu() {
         drawHumanMenu(me);
     }
 
-    ctx.restore(); // CORREÇÃO DE BUG: Restaura o estado após desenhar o menu
+    ctx.restore(); // CORREÇÃO DE BUG - Restaura o estado após desenhar o menu
 }
 
 function drawZombieMenu(me) {
@@ -2013,8 +1922,8 @@ function getFunctionsLayout() {
     const startY = menuY + 200;
 
     return {
-        buttons: functions.map((func, index) => ({ ...func,
-            rect: {
+        buttons: functions.map((func, index) => ({
+            ...func, rect: {
                 x: startX + (index % cols) * (btnWidth + gap),
                 y: startY + Math.floor(index / cols) * (btnHeight + gap),
                 width: btnWidth,
@@ -2049,7 +1958,8 @@ function getZombieItemsLayout() {
     const startX = menuX + (menuWidth - totalGridWidth) / 2;
     const startY = menuY + 200;
     return {
-        buttons: abilities.map((ability, index) => ({ ...ability,
+        buttons: abilities.map((ability, index) => ({
+            ...ability,
             rect: {
                 x: startX + (index % cols) * (btnWidth + gap),
                 y: startY + Math.floor(index / cols) * (btnHeight + gap),
@@ -2116,7 +2026,8 @@ function getItemsLayout() {
     const startX = menuX + (menuWidth - totalGridWidth) / 2;
     const startY = menuY + 200;
     return {
-        buttons: items.map((item, index) => ({ ...item,
+        buttons: items.map((item, index) => ({
+            ...item,
             rect: {
                 x: startX + (index % cols) * (btnWidth + gap),
                 y: startY + Math.floor(index / cols) * (btnHeight + gap),
@@ -2189,7 +2100,8 @@ function getRareItemsLayout() {
     const startX = menuX + (menuWidth - totalGridWidth) / 2;
     const startY = menuY + 200;
     return {
-        buttons: rareItems.map((item, index) => ({ ...item,
+        buttons: rareItems.map((item, index) => ({
+            ...item,
             rect: {
                 x: startX + (index % cols) * (btnWidth + gap),
                 y: startY + Math.floor(index / cols) * (btnHeight + gap),

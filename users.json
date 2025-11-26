@@ -2,78 +2,41 @@
   "Eddie": {
     "id": "ID108156",
     "username": "Eddie",
+    "password": "123",
     "color": "#3498db",
     "photo": "https://www.google.com/url?sa=i&url=https%3A%2F%2Fdepositphotos.com%2Fbr%2Fvectors%2Fperfil-masculino.html&psig=AOvVaw2xcI-ra2qOCjr5IbEMqEvx&ust=1756228728998000&source=images&cd=vfe&opi=89978449&ved=0CBUQjRxqFwoTCODumoC8po8DFQAAAAAdAAAAABAM",
     "editedName": false,
     "friends": [],
-    "requests": [],
-    "salt": "7b4b888fb640884063cbf4aee6d17343",
-    "passwordHash": "19132f63c3730a5df690009598b0a33f51098bc1bda741b25713bedac7d99757e12a808634ce65071fac1da94e68bcedddbb7801e54fc12225a4d3d07c173b9f"
+    "requests": []
   },
   "Zombie": {
     "id": "ID916785",
     "username": "Zombie",
+    "password": "123456",
     "color": "#3498db",
     "photo": null,
     "editedName": false,
     "friends": [],
-    "requests": [],
-    "salt": "7fe424e6f9976c7d5238ff77c39b097f",
-    "passwordHash": "1b281107089c099aeecc6e0b5ce425ae7633380deaaad3a01a74c1e7c39180aab0149ee35a803cba4ddbdd5bade53159256a978bf02b8a3b8681a5f8fb2ac788"
+    "requests": []
   },
   "huh": {
     "id": "ID935256",
     "username": "huh",
+    "password": "huh",
     "color": "#3498db",
     "photo": null,
     "editedName": false,
     "friends": [],
-    "requests": [],
-    "salt": "8e7c957b5f941b85031d0239f6bd2646",
-    "passwordHash": "238dd5267653ef1a50e5f4566de9e21fa9535a55893b7add146ffd5d7bdb70439ba456b6080971a716949a0e4e3e22e63ae6662d16ef41d99d964edee29e7644"
+    "requests": []
   },
   "MINGAU": {
     "id": "ID238217",
     "username": "MINGAU",
+    "password": "dev",
     "color": "#3498db",
     "photo": null,
     "editedName": false,
     "friends": [],
-    "requests": [],
-    "salt": "e54caecb6cd2a13d53db0c31f1956004",
-    "passwordHash": "9ca0e8e68134506012a5babef90718bb0c7dc78d1c18c1750feae4d1192525663973008f3a182831f81ebef9ae31c94a286135ff678efab62a4c36db4ada3a74"
-  },
-  "mingau": {
-    "id": "ID631748",
-    "username": "mingau",
-    "color": "#3498db",
-    "photo": null,
-    "editedName": false,
-    "friends": [],
-    "requests": [],
-    "salt": "63ff79ac7246f19554bcafdb4ada7f71",
-    "passwordHash": "f56c255f36144f699d272a1fe4e9604079f920cbd3809afd76ba6ec8d716383f2c616ab652e55e87a8e9f4dc2fc028c2064a641136983f6479dc443b4b8ec7b4"
-  },
-  "User098": {
-    "id": "ID190720",
-    "username": "User098",
-    "color": "#3498db",
-    "photo": null,
-    "editedName": false,
-    "friends": [],
-    "requests": [],
-    "salt": "f2654320262abe2fa45bb70ea4f31396",
-    "passwordHash": "42158cbb9ac5ab081806e38eaf18976fe3ce09f223a4ea1527fdfb70ddcca25fa9a5c924da2fcc0ebecd6a980b2690cf2226b022e4fe6011ee42ca5a3bae2178"
-  },
-  "User09845": {
-    "id": "ID495975",
-    "username": "User09845",
-    "color": "#3498db",
-    "photo": null,
-    "editedName": false,
-    "friends": [],
-    "requests": [],
-    "salt": "521896b0b5f4ae1bd6a1354def713a0c",
-    "passwordHash": "76eb785cfbebb2e2f2df68e9832ab60b9e28ac7c113aa3b3d5419e62764cbef475444af49e9481fd8707efca3ec072064256f7809712dd4bde4720b750bccf58"
+    "requests": []
   }
 }
