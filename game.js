@@ -198,7 +198,7 @@ socket.on('newMessage', (message) => {
 
 // provavelmente movimentação
 window.addEventListener('keydown', function (event) {
-    const key = event.key.toLowerCase();
+    const key = (event.key || '').toLowerCase();
     const me = gameState.players[myId];
 
     if (key === 'enter') {
@@ -395,7 +395,7 @@ window.addEventListener('keydown', function (event) {
 });
 
 window.addEventListener('keyup', function (event) {
-    const key = event.key.toLowerCase();
+    const key = (event.key || '').toLowerCase();
     switch (key) {
         case 'w':
         case 'ArrowUp':
