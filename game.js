@@ -2201,5 +2201,15 @@ function gameLoop() {
 // gameLoop();
 
 function startGame() {
+    // Esconder menu principal e mostrar canvas
+    const mainMenu = document.getElementById('mainMenuOverlay');
+    if (mainMenu) mainMenu.style.display = 'none';
+    
+    const canvas = document.getElementById('gameCanvas');
+    if (canvas) canvas.classList.remove('hidden-element');
+    
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) chatInput.classList.remove('hidden-element');
+    
     gameLoop();
 }

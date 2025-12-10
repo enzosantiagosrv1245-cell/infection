@@ -3,17 +3,230 @@
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
-    <title>Infestation</title>
+    <title>Infestation - Jogo Multiplayer</title>
     <link rel="stylesheet" href="style.css" type="text/css">
+    <style>
+        /* EvoWorld Style Main Menu */
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            overflow: hidden;
+        }
+
+        #mainMenuOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+            display: flex;
+            z-index: 9999;
+        }
+
+        .main-menu-left {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .main-menu-right {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .game-title {
+            font-size: 4em;
+            font-weight: bold;
+            color: #2ecc71;
+            text-shadow: 3px 3px 10px rgba(0, 0, 0, 0.8);
+            margin-bottom: 20px;
+        }
+
+        .game-subtitle {
+            font-size: 1.5em;
+            color: #ecf0f1;
+            margin-bottom: 30px;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn-primary {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1em;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: #27ae60;
+            transform: scale(1.05);
+        }
+
+        .btn-secondary {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1em;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background-color: #2980b9;
+            transform: scale(1.05);
+        }
+
+        .info-box {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #2ecc71;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .social-links {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .social-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid #2ecc71;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            text-align: center;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .social-btn:hover {
+            background: #2ecc71;
+            color: #0f3460;
+        }
+
+        .bottom-links {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .bottom-link {
+            color: #ecf0f1;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: color 0.3s;
+        }
+
+        .bottom-link:hover {
+            color: #2ecc71;
+        }
+
+        .stats-display {
+            background: rgba(46, 204, 113, 0.2);
+            border: 2px solid #2ecc71;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .stats-display h3 {
+            margin: 0 0 10px 0;
+            color: #2ecc71;
+        }
+
+        .hidden-element {
+            display: none !important;
+        }
+    </style>
 </head>
 <body>
 
-<canvas id="gameCanvas" tabindex="0"></canvas>
-<label for="chatInput"></label>
-<input autocomplete="off" id="chatInput" placeholder="Pressione Enter para conversar..." type="text">"
+<canvas id="gameCanvas" tabindex="0" class="hidden-element"></canvas>
+<input autocomplete="off" id="chatInput" placeholder="Pressione Enter para conversa..." type="text" class="hidden-element">
 
-<div id="menu-ui">
+<div id="mainMenuOverlay">
+    <div class="main-menu-left">
+        <div class="game-title">⚔️ Infestation</div>
+        <div class="game-subtitle">Humanos vs Zumbis - Jogo Multiplayer em Tempo Real</div>
+        
+        <div id="authSection">
+            <div class="auth-buttons">
+                <button class="btn-primary" id="loginBtn">Entrar</button>
+                <button class="btn-secondary" id="registerBtn">Criar Conta</button>
+            </div>
+        </div>
 
+        <div id="playSection" class="hidden-element">
+            <button class="btn-primary" id="playGameBtn">Jogar Agora</button>
+            <p class="stats-display">
+                <b>Logado como:</b> <span id="playerName">Guest</span><br>
+                <span id="playerLevel">Nível: 0</span>
+            </p>
+        </div>
+
+        <div class="info-box">
+            <h3>Como Jogar</h3>
+            <p><b>WASD / Setas:</b> Movimento</p>
+            <p><b>Clique Esquerdo:</b> Atacar/Usar item</p>
+            <p><b>B:</b> Loja (apenas humanos)</p>
+            <p><b>E:</b> Pegar/Largar item</p>
+            <p><b>G:</b> Largar item</p>
+        </div>
+    </div>
+
+    <div class="main-menu-right">
+        <div class="info-box" style="max-width: 300px;">
+            <h3>Bem-vindo ao Infestation! 🎮</h3>
+            <p>Um jogo de estratégia e ação em tempo real onde você pode:</p>
+            <ul>
+                <li>🧟 Jogar como Humano ou Zumbi</li>
+                <li>💎 Ganhar Gemas e Subir de Nível</li>
+                <li>🛍️ Comprar Itens na Loja</li>
+                <li>👥 Competir Contra Outros Jogadores</li>
+                <li>⭐ Desblocar Skins e Habilidades</li>
+            </ul>
+        </div>
+
+        <div class="social-links">
+            <a href="https://discord.gg/AZzAX2cQR7" target="_blank" class="social-btn">
+                💬 Discord
+            </a>
+            <a href="https://www.youtube.com/@canalmegacode" target="_blank" class="social-btn">
+                📺 YouTube
+            </a>
+        </div>
+    </div>
+</div>
+
+<div id="menu-ui" class="hidden-element">
     <div id="menu-ui-container">
         <div class="menu-panel" id="instructions-panel">
             <h2>Instructions</h2>
@@ -26,23 +239,6 @@
                 <li><span class="key">Mouse Left Click</span> - Use item / Attack</li>
             </ul>
         </div>
-        <div class="menu-panel" id="main-menu-panel">
-            <h1>Infestation</h1>
-
-            <div id="login-section">
-                <button class="profile-btn" id="loginBtn">Log in</button>
-            </div>
-
-            <div class="hidden" id="play-section">
-                <button id="playGameBtn">Play</button>
-                <p class="logged-in-status">Connected as <span id="playerName"></span></p>
-            </div>
-        </div>
-        <div id="right-panels-container">
-            <div class="menu-panel" id="discord-panel">
-                <button>Join us on Discord</button>
-            </div>
-        </div>
 
         <div id="profileBallContainer"></div>
 
@@ -54,7 +250,7 @@
                 <label for="password"></label>
                 <input id="password" placeholder="Senha" type="password">
                 <div class="modal-buttons">
-                    <button id="registerBtn">Create account</button>
+                    <button id="registerSubmitBtn">Create account</button>
                     <button id="loginSubmitBtn">log in</button>
                     <button id="closeModalBtn">Close</button>
                 </div>
@@ -95,6 +291,8 @@
                 <h3>Change profile picture</h3>
                 <input accept="image/*" id="changePhotoInput" type="file">
                 <button id="changePhotoBtn">Change photo</button>
+                <h3>Resgatar Código</h3>
+                <button id="openRedeemBtn">Resgatar Código Bonus</button>
                 <button onclick="document.getElementById('settingsModal').classList.add('hidden')">Fechar</button>
             </div>
         </div>
@@ -107,6 +305,9 @@
                 <label for="chatInputFloating"></label>
                 <input id="chatInputFloating" placeholder="Digite uma mensagem..." type="text">
                 <button id="sendChatFloating">Enviar</button>
+            </div>
+        </div>
+
         <!-- Sistema de Resgate de Código -->
         <div class="generic-modal hidden" id="redeemModal">
             <div class="modal-box">
@@ -118,17 +319,35 @@
                 <button onclick="document.getElementById('redeemModal').classList.add('hidden')">Fechar</button>
             </div>
         </div>
-            </div>
-        </div>
-
     </div>
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        <!--   Para que serve isso?     -->
-        const socket = io();
-    </script>
-    <script src="menu.js"></script>
-    <script src="game.js"></script>
 </div>
+
+<div class="bottom-links" id="bottomLinks">
+    <a href="#" class="bottom-link" id="privacyLink">Política de Privacidade</a>
+    <a href="#" class="bottom-link" id="contactLink">Contato</a>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    
+    // Controlar visibilidade do menu principal
+    function showMainMenu() {
+        document.getElementById('mainMenuOverlay').style.display = 'flex';
+        document.getElementById('gameCanvas').classList.add('hidden-element');
+        document.getElementById('chatInput').classList.add('hidden-element');
+    }
+    
+    function hideMainMenu() {
+        document.getElementById('mainMenuOverlay').style.display = 'none';
+        document.getElementById('gameCanvas').classList.remove('hidden-element');
+        document.getElementById('chatInput').classList.remove('hidden-element');
+    }
+    
+    // Mostrar menu principal ao carregar
+    window.addEventListener('load', showMainMenu);
+</script>
+<script src="menu.js"></script>
+<script src="game.js"></script>
 </body>
 </html>

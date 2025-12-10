@@ -219,35 +219,49 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // --- Login / Registro ---
     const loginBtn = document.getElementById("loginBtn");
+    const registerBtn = document.getElementById("registerBtn");
     const loginModal = document.getElementById("loginModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
-    const registerBtn = document.getElementById("registerBtn");
     const loginSubmitBtn = document.getElementById("loginSubmitBtn");
+    const registerSubmitBtn = document.getElementById("registerSubmitBtn");
     const usernameInput = document.getElementById("username");
     const passwordInput = document.getElementById("password");
 
-    loginBtn.addEventListener("click", () => loginModal.classList.remove("hidden"));
-    closeModalBtn.addEventListener("click", () => loginModal.classList.add("hidden"));
-
-    registerBtn.addEventListener("click", () => {
-        const user = usernameInput.value.trim();
-        const pass = passwordInput.value.trim();
-        if (!user || !pass) return showNotification("⚠️ Preencha todos os campos!", "red");
-        socket.emit("register", {
-            username: user,
-            password: pass
+    if (loginBtn) {
+        loginBtn.addEventListener("click", () => {
+            if (loginModal) loginModal.classList.remove("hidden");
         });
-    });
-
-    loginSubmitBtn.addEventListener("click", () => {
-        const user = usernameInput.value.trim();
-        const pass = passwordInput.value.trim();
-        if (!user || !pass) return showNotification("⚠️ Preencha todos os campos!", "red");
-        socket.emit("login", {
-            username: user,
-            password: pass
+    }
+    
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener("click", () => {
+            if (loginModal) loginModal.classList.add("hidden");
         });
-    });
+    }
+
+    if (registerSubmitBtn) {
+        registerSubmitBtn.addEventListener("click", () => {
+            const user = usernameInput.value.trim();
+            const pass = passwordInput.value.trim();
+            if (!user || !pass) return showNotification("⚠️ Preencha todos os campos!", "red");
+            socket.emit("register", {
+                username: user,
+                password: pass
+            });
+        });
+    }
+
+    if (loginSubmitBtn) {
+        loginSubmitBtn.addEventListener("click", () => {
+            const user = usernameInput.value.trim();
+            const pass = passwordInput.value.trim();
+            if (!user || !pass) return showNotification("⚠️ Preencha todos os campos!", "red");
+            socket.emit("login", {
+                username: user,
+                password: pass
+            });
+        });
+    }
 
     socket.on("registerSuccess", () => showNotification("✅ Conta criada!", "green"));
     socket.on("registerError", msg => showNotification("❌ " + msg, "red"));
@@ -562,6 +576,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Botão para abrir modal de resgate
+    const openRedeemBtn = document.getElementById("openRedeemBtn");
+    if (openRedeemBtn && redeemModal) {
+        openRedeemBtn.addEventListener("click", () => {
+            redeemModal.classList.remove("hidden");
+        });
+    }
+
     socket.on("redeemCodeResult", (result) => {
         if (result.success) {
             showNotification(`✅ ${result.message}`, "green");
@@ -571,3 +593,4 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+
