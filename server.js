@@ -4,6 +4,19 @@ const {Server} = require("socket.io");
 const Matter = require('matter-js');
 const fs = require('fs-extra');
 const path = require('path');
+const {
+  calculateLevelFromXP,
+  getXPProgressToNextLevel,
+  getLevelColor,
+  getSkinColor,
+  getGemBonusMultiplier,
+  initializeUserLevel,
+  addXPToUser
+} = require('./levelSystem.js');
+const {
+  redeemCode,
+  addRedemptionCode
+} = require('./redeemSystem.js');
 
 const app = express();
 const server = http.createServer(app);
@@ -331,15 +344,33 @@ function initializeGame() {
 
 // ** INÍCIO DAS ALTERAÇÕES **
 // Função para adicionar gemas e aumentar a velocidade do humano
-function addGems(player, amount) {
+// Agora também adiciona XP ao usuário
+function addGems(player, amount, username = null) {
     if (!player || amount <= 0) {
         if (player) player.gems += amount;
         return;
     }
 
+    // Aplicar bônus de gemas baseado no nível
+    let finalAmount = amount;
+    if (username && users[username]) {
+        const multiplier = getGemBonusMultiplier(users[username].level);
+        finalAmount = Math.floor(amount * multiplier);
+        
+        // Adicionar XP (XP = gemas ganhas)
+        const xpResult = addXPToUser(users[username], amount);
+        if (xpResult.leveledUp) {
+            console.log(`[LEVEL UP] ${username} subiu para nível ${xpResult.newLevel}`);
+            player.level = xpResult.newLevel;
+            player.levelColor = getLevelColor(xpResult.newLevel);
+            player.skinColor = getSkinColor(xpResult.newLevel, player.role);
+        }
+        saveUsers();
+    }
+
     if (player.role === 'human') {
         const oldGems = player.gems;
-        player.gems += amount;
+        player.gems += finalAmount;
         const newGems = player.gems;
 
         const milestonesPassed = Math.floor(newGems / 100) - Math.floor(oldGems / 100);
@@ -353,7 +384,7 @@ function addGems(player, amount) {
         }
     } else {
         // Se não for humano (ex: zumbi pegando gemas de humano infectado), apenas adiciona
-        player.gems += amount;
+        player.gems += finalAmount;
     }
 }
 
@@ -1659,8 +1690,14 @@ io.on('connection', (socket) => {
             photo: null,
             editedName: false,
             friends: [],
-            requests: []
+            requests: [],
+            level: 0,
+            totalXP: 0,
+            redeemedCodes: [],
+            isDeveloper: false,
+            gems: 0
         };
+        initializeUserLevel(users[username]);
         saveUsers();
         socket.emit("registerSuccess", users[username]);
     });
@@ -1675,11 +1712,21 @@ io.on('connection', (socket) => {
         socket.username = username;
         sockets[username] = socket.id;
         if (!messages[username]) messages[username] = {};
-        socket.emit("loginSuccess", users[username]);
+        
+        // Garantir que usuário tenha dados de nível
+        const userObj = users[username];
+        initializeUserLevel(userObj);
+        
+        socket.emit("loginSuccess", userObj);
 
         const player = gameState.players[socket.id];
         if (player) {
             player.name = username;
+            player.level = userObj.level;
+            player.levelColor = getLevelColor(userObj.level);
+            player.skinColor = getSkinColor(userObj.level, player.role);
+            player.gemBonus = getGemBonusMultiplier(userObj.level);
+
         }
     });
 
@@ -1781,6 +1828,25 @@ io.on('connection', (socket) => {
         if (users[username]) {
             users[username].photo = photo;
             saveUsers();
+        }
+    });
+
+    socket.on("redeemCode", ({
+                                 username,
+                                 code
+                             }) => {
+        if (!users[username]) return socket.emit("redeemCodeResult", {
+            success: false,
+            message: "Usuário não encontrado"
+        });
+        
+        const result = redeemCode(username, code, users[username]);
+        saveUsers();
+        
+        if (result.success) {
+            socket.emit("redeemCodeResult", result);
+        } else {
+            socket.emit("redeemCodeResult", result);
         }
     });
 

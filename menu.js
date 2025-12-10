@@ -539,4 +539,35 @@ document.addEventListener("DOMContentLoaded", () => {
         chatMessagesFloating.appendChild(div);
         chatMessagesFloating.scrollTop = chatMessagesFloating.scrollHeight;
     }
+
+    // --- Sistema de Resgate de Código ---
+    const redeemModal = document.getElementById("redeemModal");
+    const redeemCodeInput = document.getElementById("redeemCodeInput");
+    const redeemSubmitBtn = document.getElementById("redeemSubmitBtn");
+
+    if (redeemSubmitBtn) {
+        redeemSubmitBtn.addEventListener("click", () => {
+            const code = redeemCodeInput.value.trim();
+            if (!code) {
+                showNotification("⚠️ Digite um código!", "red");
+                return;
+            }
+            
+            socket.emit("redeemCode", {
+                username: currentUser,
+                code
+            });
+            
+            redeemCodeInput.value = "";
+        });
+    }
+
+    socket.on("redeemCodeResult", (result) => {
+        if (result.success) {
+            showNotification(`✅ ${result.message}`, "green");
+            if (redeemModal) redeemModal.classList.add("hidden");
+        } else {
+            showNotification(`❌ ${result.message}`, "red");
+        }
+    });
 });

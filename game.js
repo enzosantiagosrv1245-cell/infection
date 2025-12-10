@@ -1027,13 +1027,18 @@ function draw() {
             const isDev = player.name === 'Eddie' || player.name === 'Mingau';
             const nameX = player.x + player.width / 2;
             const nameY = player.y - 20;
+            
+            // Obter cor do nível
+            const levelColor = player.levelColor || '#FFFFFF';
+            const levelText = player.level ? `[${player.level}]` : '';
 
             if (isDev) {
                 ctx.font = 'bold 20px College';
                 const devTag = '';
                 const playerName = player.name;
+                const levelDisplay = `${playerName} ${levelText}`;
                 const devTagWidth = ctx.measureText(devTag).width;
-                const nameWidth = ctx.measureText(playerName).width;
+                const nameWidth = ctx.measureText(levelDisplay).width;
                 const totalWidth = devTagWidth + nameWidth;
                 const devTagX = nameX - totalWidth / 2;
                 const playerNameX = devTagX + devTagWidth;
@@ -1048,20 +1053,22 @@ function draw() {
                 ctx.strokeText(devTag, devTagX, nameY);
                 ctx.fillText(devTag, devTagX, nameY);
 
-                // Draw player name
+                // Draw player name with level
                 ctx.fillStyle = (player.role === 'zombie' || player.isSpying) ? '#2ecc71' : 'white';
-                ctx.strokeText(playerName, playerNameX, nameY);
-                ctx.fillText(playerName, playerNameX, nameY);
-                ctx.fillText(playerName, playerNameX, nameY);
+                ctx.strokeText(levelDisplay, playerNameX, nameY);
+                ctx.fillText(levelDisplay, playerNameX, nameY);
+                ctx.fillText(levelDisplay, playerNameX, nameY);
 
             } else {
                 ctx.textAlign = 'center';
                 ctx.font = '18px Arial';
                 ctx.strokeStyle = 'black';
                 ctx.lineWidth = 5;
-                ctx.strokeText(player.name, nameX, nameY);
-                ctx.fillStyle = (player.role === 'zombie' || player.isSpying) ? '#2ecc71' : 'white';
-                ctx.fillText(player.name, nameX, nameY);
+                
+                const displayName = player.name + (levelText ? ` ${levelText}` : '');
+                ctx.strokeText(displayName, nameX, nameY);
+                ctx.fillStyle = levelColor || ((player.role === 'zombie' || player.isSpying) ? '#2ecc71' : 'white');
+                ctx.fillText(displayName, nameX, nameY);
             }
         }
     }
