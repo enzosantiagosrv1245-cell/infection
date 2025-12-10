@@ -424,13 +424,13 @@ chatInput.onblur = () => {
     chatInput.style.display = 'none';
 };
 
-canvas.addEventListener('MouseMove', function (event) {
+canvas.addEventListener('mousemove', function (event) {
     const rect = canvas.getBoundingClientRect();
     mouse.x = event.clientX - rect.left;
     mouse.y = event.clientY - rect.top;
 });
 
-canvas.addEventListener('MouseDown', function (event) {
+canvas.addEventListener('mousedown', function (event) {
     const profileIconRadius = 25;
     const coinHudWidth = 180;
     const profileIconX = canvas.width - coinHudWidth - 15 - profileIconRadius - 10;
