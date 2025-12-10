@@ -17,6 +17,11 @@ const {
   redeemCode,
   addRedemptionCode
 } = require('./redeemSystem.js');
+const {
+  MissionSystem
+} = require('./missionSystem.js');
+
+const missionSystem = new MissionSystem();
 
 const app = express();
 const server = http.createServer(app);
@@ -1924,6 +1929,33 @@ io.on('connection', (socket) => {
             message,
             type: 'dev'
         });
+    });
+
+    // --- Sistema de Missões ---
+    socket.on('getMissions', () => {
+        if (!socket.username) return;
+        
+        missionSystem.checkAndReset();
+        const missions = missionSystem.getPlayerMissions(socket.username);
+        socket.emit('missionsData', missions);
+    });
+
+    socket.on('completeMission', ({ missionId }) => {
+        if (!socket.username) return;
+        
+        const result = missionSystem.completeMission(socket.username, missionId);
+        if (result.success) {
+            // Dar recompensa de gemas
+            const player = gameState.players[socket.id];
+            if (player) {
+                addGems(player, result.reward, socket.username);
+                socket.emit('missionCompleted', {
+                    missionId,
+                    reward: result.reward,
+                    message: `Missão completa! +${result.reward} gemas`
+                });
+            }
+        }
     });
 
     socket.on('playerInput', (inputData) => {
