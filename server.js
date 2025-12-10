@@ -1850,6 +1850,82 @@ io.on('connection', (socket) => {
         }
     });
 
+    // --- Funções de Desenvolvedor ---
+    socket.on('checkDevStatus', ({ username }, callback) => {
+        const isDev = users[username] && users[username].isDeveloper;
+        callback(isDev);
+        if (isDev) {
+            socket.emit('devMenuReady', true);
+        }
+    });
+
+    socket.on('devSpawnItem', ({ item }) => {
+        const player = gameState.players[socket.id];
+        if (!player || !users[socket.username] || !users[socket.username].isDeveloper) return;
+        
+        // Spawnar item no chão
+        if (item === 'skateboard' && !gameState.skateboard.spawned) {
+            gameState.skateboard.spawned = true;
+        }
+    });
+
+    socket.on('devAddGems', ({ amount }) => {
+        const player = gameState.players[socket.id];
+        if (!player || !users[socket.username] || !users[socket.username].isDeveloper) return;
+        
+        addGems(player, amount, socket.username);
+    });
+
+    socket.on('devTeleport', ({ x, y }) => {
+        const player = gameState.players[socket.id];
+        if (!player || !users[socket.username] || !users[socket.username].isDeveloper) return;
+        
+        player.x = x;
+        player.y = y;
+        const body = world.bodies.find(b => b.playerId === player.id);
+        if (body) {
+            Matter.Body.setPosition(body, { x, y });
+        }
+    });
+
+    socket.on('devListPlayers', ({}, callback) => {
+        if (!users[socket.username] || !users[socket.username].isDeveloper) return;
+        
+        const playerList = Object.values(gameState.players).map(p => ({
+            id: p.id,
+            name: p.name,
+            role: p.role,
+            level: p.level,
+            gems: p.gems,
+            x: Math.round(p.x),
+            y: Math.round(p.y)
+        }));
+        
+        callback(playerList);
+    });
+
+    socket.on('devResetRound', ({}) => {
+        if (!users[socket.username] || !users[socket.username].isDeveloper) return;
+        startNewRound();
+    });
+
+    socket.on('devToggleGodMode', ({}) => {
+        const player = gameState.players[socket.id];
+        if (!player || !users[socket.username] || !users[socket.username].isDeveloper) return;
+        
+        player.godMode = !player.godMode;
+    });
+
+    socket.on('devBroadcast', ({ message }) => {
+        if (!users[socket.username] || !users[socket.username].isDeveloper) return;
+        
+        io.emit('broadcastMessage', {
+            from: '[SISTEMA]',
+            message,
+            type: 'dev'
+        });
+    });
+
     socket.on('playerInput', (inputData) => {
         const player = gameState.players[socket.id];
         if (player && player.input) {
