@@ -20,8 +20,10 @@ const {
 const {
   MissionSystem
 } = require('./missionSystem.js');
+const SecuritySystem = require('./securitySystem.js');
 
 const missionSystem = new MissionSystem();
+const security = new SecuritySystem();
 
 const app = express();
 const server = http.createServer(app);
@@ -1711,36 +1713,55 @@ io.on('connection', (socket) => {
                             username,
                             password
                         }) => {
-        if (!users[username] || users[username].password !== password)
+        // Sanitizar inputs
+        const cleanUsername = security.sanitize(username);
+        const cleanPassword = security.sanitize(password);
+        
+        if (!cleanUsername || !cleanPassword) {
+            security.logSuspicious(cleanUsername || 'unknown', socket.id, 'Invalid input format');
             return socket.emit("loginError", "Usuário ou senha incorretos!");
+        }
+        
+        if (!users[cleanUsername] || users[cleanUsername].password !== cleanPassword) {
+            security.logSuspicious(cleanUsername, socket.id, 'Failed login attempt');
+            return socket.emit("loginError", "Usuário ou senha incorretos!");
+        }
 
-        socket.username = username;
-        sockets[username] = socket.id;
-        if (!messages[username]) messages[username] = {};
+        socket.username = cleanUsername;
+        sockets[cleanUsername] = socket.id;
+        if (!messages[cleanUsername]) messages[cleanUsername] = {};
         
         // Garantir que usuário tenha dados de nível
-        const userObj = users[username];
+        const userObj = users[cleanUsername];
         initializeUserLevel(userObj);
         
         socket.emit("loginSuccess", userObj);
 
         const player = gameState.players[socket.id];
         if (player) {
-            player.name = username;
+            player.name = cleanUsername;
             player.level = userObj.level;
             player.levelColor = getLevelColor(userObj.level);
             player.skinColor = getSkinColor(userObj.level, player.role);
             player.gemBonus = getGemBonusMultiplier(userObj.level);
-
         }
     });
 
     socket.on("newLink", url => {
-        links.push(url);
-        saveLinks();
-        socket.broadcast.emit("broadcastLink", url);
+        // Validar URL
+        try {
+            new URL(url);
+            links.push(security.sanitize(url));
+            saveLinks();
+            socket.broadcast.emit("broadcastLink", security.sanitize(url));
+        } catch (e) {
+            security.logSuspicious(socket.username, socket.id, 'Invalid URL attempt');
+        }
     });
-    socket.on("checkUserExists", (username, callback) => callback(!!users[username]));
+    socket.on("checkUserExists", (username, callback) => {
+        const clean = security.sanitize(username);
+        callback(!!users[clean]);
+    });
     socket.on("friendRequest", ({
                                     from,
                                     to,
@@ -2696,6 +2717,11 @@ setInterval(() => {
         }
     }
 }, 1000);
+
+// Limpeza de segurança a cada minuto
+setInterval(() => {
+    security.cleanup();
+}, 60000);
 
 setInterval(() => {
     updateGameState();
