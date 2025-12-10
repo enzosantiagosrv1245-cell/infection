@@ -623,12 +623,9 @@ canvas.addEventListener('wheel', function (event) {
 
 function draw() {
     if (!myId || !gameState.players || !gameState.players[myId]) {
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'white';
-        ctx.textAlign = 'center';
-        ctx.font = '30px Arial';
-        ctx.fillText('Waiting for game state...', canvas.width / 2, canvas.height / 2);
+        // Se o jogador ainda não foi inicializado, apenas limpa o canvas
+        // e sai sem desenhar a mensagem de "carregamento".
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         return;
     }
 
